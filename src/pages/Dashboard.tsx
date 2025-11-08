@@ -76,8 +76,8 @@ const Dashboard = () => {
               <Plane className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Airline Management</h1>
-              <p className="text-sm text-white/80">Welcome back!</p>
+              <h1 className="text-xl font-bold text-white">FlyPrague</h1>
+              <p className="text-sm text-white/80">Management Portal</p>
             </div>
           </div>
           <Button onClick={handleLogout} variant="secondary" size="sm">

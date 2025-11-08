@@ -121,8 +121,8 @@ const Auth = () => {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl">Airline Management System</CardTitle>
-            <CardDescription>Access your dashboard</CardDescription>
+            <CardTitle className="text-2xl">FlyPrague</CardTitle>
+            <CardDescription>Welcome to FlyPrague Management System</CardDescription>
           </div>
         </CardHeader>
         <CardContent>

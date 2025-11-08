@@ -27,11 +27,11 @@ const Index = () => {
           
           <div className="space-y-4">
             <h1 className="text-5xl font-bold text-white">
-              Airline Management System
+              FlyPrague
             </h1>
             <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Streamline your airline operations with our comprehensive management platform.
-              Manage users, track flights, and communicate with your team in real-time.
+              Your gateway to seamless airline operations. Manage users, track flights, 
+              and stay connected with your team in real-time.
             </p>
           </div>
 
