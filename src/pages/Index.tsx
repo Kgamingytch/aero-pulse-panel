@@ -19,11 +19,11 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center"
       style={{ backgroundImage: `url(${BackgroundImage})` }}
     >
-      <div className="text-center space-y-8 bg-white bg-opacity-90 rounded-2xl p-8 shadow-lg">
+      <div className="text-center space-y-8 bg-white bg-opacity-95 rounded-2xl p-10 shadow-lg max-w-md w-full">
 
         {/* LOGO */}
         <img 
@@ -43,7 +43,7 @@ const Index = () => {
           placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full max-w-sm mx-auto px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:border-blue-500 focus:ring focus:ring-blue-200 outline-none"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
         />
 
         {/* LOGIN BUTTON */}
@@ -51,7 +51,7 @@ const Index = () => {
           size="lg"
           variant="default"
           onClick={() => navigate("/auth")}
-          className="text-lg px-10 bg-blue-500 text-white hover:bg-blue-600"
+          className="w-full px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition"
         >
           Log-In
         </Button>
