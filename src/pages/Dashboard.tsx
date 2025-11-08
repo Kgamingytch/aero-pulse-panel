@@ -60,7 +60,7 @@ const Dashboard = () => {
           backgroundPosition: 'center',
         }}
       >
-        <p className="text-gray-800 text-xl animate-pulse">Loading...</p>
+        <p className="text-gray-900 text-xl animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -77,11 +77,11 @@ const Dashboard = () => {
       }}
     >
       {/* HEADER */}
-      <header className="shadow-card sticky top-0 z-10 bg-white bg-opacity-90 backdrop-blur-sm">
+      <header className="shadow sticky top-0 z-10 bg-white backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800">FlyPrague</h1>
+          <h1 className="text-xl font-bold text-gray-900">FlyPrague</h1>
           <Button onClick={handleLogout} size="sm" variant="outline">
-            <LogOut className="h-4 w-4 mr-2 text-gray-800" />
+            <LogOut className="h-4 w-4 mr-2 text-gray-900" />
             Logout
           </Button>
         </div>
@@ -89,47 +89,53 @@ const Dashboard = () => {
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Top Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-white/80 rounded-lg shadow p-6 flex items-center gap-4">
+          <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Bell className="h-6 w-6 text-gray-700" />
+              <Bell className="h-6 w-6 text-gray-800" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-gray-800">Announcements</p>
+              <p className="text-2xl font-bold text-gray-900">Announcements</p>
             </div>
           </div>
 
-          <div className="bg-white/80 rounded-lg shadow p-6 flex items-center gap-4">
+          <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-gray-700" />
+              <Calendar className="h-6 w-6 text-gray-800" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Scheduled</p>
-              <p className="text-2xl font-bold text-gray-800">Flights</p>
+              <p className="text-2xl font-bold text-gray-900">Flights</p>
             </div>
           </div>
 
           {isAdmin && (
-            <div className="bg-white/80 rounded-lg shadow p-6 flex items-center gap-4">
+            <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
               <div className="h-12 w-12 flex items-center justify-center">
-                <Users className="h-6 w-6 text-gray-700" />
+                <Users className="h-6 w-6 text-gray-800" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Admin</p>
-                <p className="text-2xl font-bold text-gray-800">Dashboard</p>
+                <p className="text-2xl font-bold text-gray-900">Dashboard</p>
               </div>
             </div>
           )}
         </div>
 
+        {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <AnnouncementsPanel isAdmin={isAdmin} />
-          <FlightsPanel isAdmin={isAdmin} />
+          <div className="bg-white rounded-lg shadow p-4">
+            <AnnouncementsPanel isAdmin={isAdmin} />
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <FlightsPanel isAdmin={isAdmin} />
+          </div>
         </div>
 
         {isAdmin && (
-          <div className="mt-8">
+          <div className="mt-8 bg-white rounded-lg shadow p-4">
             <UserManagementPanel />
           </div>
         )}
