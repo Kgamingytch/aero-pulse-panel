@@ -93,20 +93,20 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Bell className="h-6 w-6 text-gray-800" />
+              <Bell className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Active</p>
+              <p className="text-sm text-gray-500">Active</p>
               <p className="text-2xl font-bold text-gray-900">Announcements</p>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-gray-800" />
+              <Calendar className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Scheduled</p>
+              <p className="text-sm text-gray-500">Scheduled</p>
               <p className="text-2xl font-bold text-gray-900">Flights</p>
             </div>
           </div>
@@ -114,10 +114,10 @@ const Dashboard = () => {
           {isAdmin && (
             <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
               <div className="h-12 w-12 flex items-center justify-center">
-                <Users className="h-6 w-6 text-gray-800" />
+                <Users className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Admin</p>
+                <p className="text-sm text-gray-500">Admin</p>
                 <p className="text-2xl font-bold text-gray-900">Dashboard</p>
               </div>
             </div>
@@ -126,16 +126,16 @@ const Dashboard = () => {
 
         {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-4 text-gray-900">
             <AnnouncementsPanel isAdmin={isAdmin} />
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-4 text-gray-900">
             <FlightsPanel isAdmin={isAdmin} />
           </div>
         </div>
 
         {isAdmin && (
-          <div className="mt-8 bg-white rounded-lg shadow p-4">
+          <div className="mt-8 bg-white rounded-lg shadow p-4 text-gray-900">
             <UserManagementPanel />
           </div>
         )}
