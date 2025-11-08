@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-// IMPORT YOUR IMAGES
-import BackgroundImage from "/Background.png"; // Image 1
-import LogoImage from "/FlyPrague_logo_png.png"; // Image 2
+// Background from public
+const BackgroundImage = "/Background.png";
+// Logo image
+import LogoImage from "/FlyPrague_logo_png.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -20,37 +21,37 @@ const Index = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat"
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center"
       style={{ backgroundImage: `url(${BackgroundImage})` }}
     >
-      <div className="container mx-auto px-4 py-20 text-center space-y-8 backdrop-blur-[2px]">
-        
-        {/* LOGO IMAGE REPLACING PLANE ICON */}
-        <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
-          <img src={LogoImage} alt="FlyPrague Logo" className="h-14 w-14" />
-        </div>
+      <div className="text-center space-y-8 backdrop-blur-[1px] px-4">
 
-        {/* TITLE + SUBTEXT */}
-        <div className="space-y-3">
-          <h1 className="text-4xl font-bold text-white drop-shadow-md">
-            FlyPrague
-          </h1>
-          <p className="text-lg text-white/90 drop-shadow-md">
-            Welcome to the FlyPrague Crew Dashboard.
-          </p>
-        </div>
+        {/* LOGO - no background circle */}
+        <img 
+          src={LogoImage} 
+          alt="FlyPrague Logo" 
+          className="h-24 w-auto mx-auto"
+        />
 
-        {/* LOGIN BUTTON */}
-        <div className="pt-6">
-          <Button 
-            size="lg"
-            variant="secondary"
-            onClick={() => navigate("/auth")}
-            className="text-lg px-10"
-          >
-            Log-In
-          </Button>
-        </div>
+        {/* Title */}
+        <h1 className="text-5xl font-bold text-white drop-shadow">
+          FlyPrague
+        </h1>
+
+        {/* Subtitle */}
+        <p className="text-lg text-white/90 drop-shadow">
+          Welcome to the FlyPrague Crew Dashboard.
+        </p>
+
+        {/* Login Button */}
+        <Button
+          size="lg"
+          variant="secondary"
+          onClick={() => navigate("/auth")}
+          className="text-lg px-10"
+        >
+          Log-In
+        </Button>
 
       </div>
     </div>
