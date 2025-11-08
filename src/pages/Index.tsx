@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 // IMPORT YOUR IMAGES
-import BackgroundImage from "@/public/Background.png"; // Image 1
-import LogoImage from "@/assets/FlyPrague_logo_png.png"; // Image 2
+import BackgroundImage from "/Background.png"; // Image 1
+import LogoImage from "/FlyPrague_logo_png.png"; // Image 2
 
 const Index = () => {
   const navigate = useNavigate();
