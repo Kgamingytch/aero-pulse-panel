@@ -53,10 +53,14 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-cover bg-center"
-        style={{ backgroundImage: `url(${BackgroundImage})` }}
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          backgroundImage: `url(${BackgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
-        <p className="text-white text-xl animate-pulse">Loading...</p>
+        <p className="text-gray-800 text-xl animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -65,15 +69,19 @@ const Dashboard = () => {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: `url(${BackgroundImage})` }}
+      className="min-h-screen"
+      style={{
+        backgroundImage: `url(${BackgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
       {/* HEADER */}
-      <header className="shadow-card sticky top-0 z-10 bg-opacity-70 backdrop-blur-sm">
+      <header className="shadow-card sticky top-0 z-10 bg-white bg-opacity-90 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">FlyPrague</h1>
-          <Button onClick={handleLogout} size="sm">
-            <LogOut className="h-4 w-4 mr-2" />
+          <h1 className="text-xl font-bold text-gray-800">FlyPrague</h1>
+          <Button onClick={handleLogout} size="sm" variant="outline">
+            <LogOut className="h-4 w-4 mr-2 text-gray-800" />
             Logout
           </Button>
         </div>
@@ -82,34 +90,34 @@ const Dashboard = () => {
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-card rounded-lg shadow-card p-6 flex items-center gap-4">
+          <div className="bg-white/80 rounded-lg shadow p-6 flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Bell className="h-6 w-6 text-primary" />
+              <Bell className="h-6 w-6 text-gray-700" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active</p>
-              <p className="text-2xl font-bold">Announcements</p>
+              <p className="text-sm text-gray-600">Active</p>
+              <p className="text-2xl font-bold text-gray-800">Announcements</p>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg shadow-card p-6 flex items-center gap-4">
+          <div className="bg-white/80 rounded-lg shadow p-6 flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-accent" />
+              <Calendar className="h-6 w-6 text-gray-700" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Scheduled</p>
-              <p className="text-2xl font-bold">Flights</p>
+              <p className="text-sm text-gray-600">Scheduled</p>
+              <p className="text-2xl font-bold text-gray-800">Flights</p>
             </div>
           </div>
 
           {isAdmin && (
-            <div className="bg-card rounded-lg shadow-card p-6 flex items-center gap-4">
+            <div className="bg-white/80 rounded-lg shadow p-6 flex items-center gap-4">
               <div className="h-12 w-12 flex items-center justify-center">
-                <Users className="h-6 w-6 text-primary" />
+                <Users className="h-6 w-6 text-gray-700" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Admin</p>
-                <p className="text-2xl font-bold">Dashboard</p>
+                <p className="text-sm text-gray-600">Admin</p>
+                <p className="text-2xl font-bold text-gray-800">Dashboard</p>
               </div>
             </div>
           )}
