@@ -55,8 +55,8 @@ const Dashboard = () => {
         className="min-h-screen flex items-center justify-center"
         style={{
           backgroundImage: `url(${BackgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
         <p className="text-gray-900 text-xl animate-pulse">Loading...</p>
@@ -71,12 +71,12 @@ const Dashboard = () => {
       className="min-h-screen"
       style={{
         backgroundImage: `url(${BackgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
       {/* HEADER */}
-      <header className="shadow sticky top-0 z-10 bg-white backdrop-blur-sm">
+      <header className="shadow sticky top-0 z-10 bg-white">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900">FlyPrague</h1>
           <Button onClick={handleLogout} size="sm" variant="outline">
@@ -88,54 +88,42 @@ const Dashboard = () => {
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Top Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-gray-50 rounded-lg shadow p-6 flex items-center gap-4">
+        {/* Unified Top Card */}
+        <div className="bg-gray-50 rounded-lg shadow p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
               <Bell className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-gray-900">Announcements</p>
+              <p className="text-xl font-bold text-gray-900">Announcements</p>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg shadow p-6 flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
               <Calendar className="h-6 w-6 text-green-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Scheduled</p>
-              <p className="text-2xl font-bold text-gray-900">Flights</p>
+              <p className="text-xl font-bold text-gray-900">Flights</p>
             </div>
           </div>
-
-          {isAdmin && (
-            <div className="bg-gray-50 rounded-lg shadow p-6 flex items-center gap-4">
-              <div className="h-12 w-12 flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Admin</p>
-                <p className="text-2xl font-bold text-gray-900">Dashboard</p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-gray-50 rounded-lg shadow p-4 text-gray-900">
-            <AnnouncementsPanel isAdmin={isAdmin} />
+            <AnnouncementsPanel isAdmin={isAdmin} lightTheme />
           </div>
           <div className="bg-gray-50 rounded-lg shadow p-4 text-gray-900">
-            <FlightsPanel isAdmin={isAdmin} />
+            <FlightsPanel isAdmin={isAdmin} lightTheme />
           </div>
         </div>
 
         {isAdmin && (
           <div className="mt-8 bg-gray-50 rounded-lg shadow p-4 text-gray-900">
-            <UserManagementPanel />
+            <UserManagementPanel lightTheme />
           </div>
         )}
       </main>
