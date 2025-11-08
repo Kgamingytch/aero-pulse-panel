@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-// Background from public
+// Both images in public folder
 const BackgroundImage = "/Background.png";
-// Logo image
-import LogoImage from "/FlyPrague_logo_png.png";
+const LogoImage = "/FlyPrague_logo_png.png"; // same folder, no import
 
 const Index = () => {
   const navigate = useNavigate();
@@ -26,24 +25,19 @@ const Index = () => {
     >
       <div className="text-center space-y-8 backdrop-blur-[1px] px-4">
 
-        {/* LOGO - no background circle */}
+        {/* LOGO */}
         <img 
-          src={LogoImage} 
-          alt="FlyPrague Logo" 
+          src={LogoImage}
+          alt="FlyPrague Logo"
           className="h-24 w-auto mx-auto"
         />
 
-        {/* Title */}
+        {/* TITLE */}
         <h1 className="text-5xl font-bold text-white drop-shadow">
           FlyPrague
         </h1>
 
-        {/* Subtitle */}
-        <p className="text-lg text-white/90 drop-shadow">
-          Welcome to the FlyPrague Crew Dashboard.
-        </p>
-
-        {/* Login Button */}
+        {/* LOGIN BUTTON */}
         <Button
           size="lg"
           variant="secondary"
