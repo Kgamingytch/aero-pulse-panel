@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Users, Bell, Calendar, LogOut } from "lucide-react";
 import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
 import { FlightsPanel } from "@/components/FlightsPanel";
 import { UserManagementPanel } from "@/components/UserManagementPanel";
 
-// Use root-relative path for logo
-import LogoImage from "/Background.png";
+// Background image
+import BackgroundImage from "/Background.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -51,8 +52,11 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <img src={LogoImage} alt="FlyPrague Logo" className="h-16 w-16 animate-pulse mb-4" />
+      <div
+        className="min-h-screen flex items-center justify-center bg-cover bg-center"
+        style={{ backgroundImage: `url(${BackgroundImage})` }}
+      >
+        <p className="text-white text-xl animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -60,15 +64,16 @@ const Dashboard = () => {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: `url(${BackgroundImage})` }}
+    >
       {/* HEADER */}
-      <header className="bg-gradient-aviation shadow-card sticky top-0 z-10">
+      <header className="shadow-card sticky top-0 z-10 bg-opacity-70 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={LogoImage} alt="FlyPrague Logo" className="h-10 w-10" />
-            <h1 className="text-xl font-bold text-white">FlyPrague</h1>
-          </div>
+          <h1 className="text-xl font-bold text-white">FlyPrague</h1>
           <Button onClick={handleLogout} size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>
         </div>
@@ -76,6 +81,40 @@ const Dashboard = () => {
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="bg-card rounded-lg shadow-card p-6 flex items-center gap-4">
+            <div className="h-12 w-12 flex items-center justify-center">
+              <Bell className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-2xl font-bold">Announcements</p>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-lg shadow-card p-6 flex items-center gap-4">
+            <div className="h-12 w-12 flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Scheduled</p>
+              <p className="text-2xl font-bold">Flights</p>
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div className="bg-card rounded-lg shadow-card p-6 flex items-center gap-4">
+              <div className="h-12 w-12 flex items-center justify-center">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Admin</p>
+                <p className="text-2xl font-bold">Dashboard</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <AnnouncementsPanel isAdmin={isAdmin} />
           <FlightsPanel isAdmin={isAdmin} />
