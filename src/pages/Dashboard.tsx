@@ -13,32 +13,37 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [fullName, setFullName] = useState<string>("User");
 
   useEffect(() => {
     const setupAuth = async () => {
-      // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         setSession(session);
         if (!session) navigate("/auth");
       });
 
-      // Get current session
       const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error fetching session:", error);
-      }
+      if (error) console.error("Error fetching session:", error);
       setSession(currentSession);
 
-      // Check if user is admin
       if (currentSession?.user) {
+        // Fetch roles
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", currentSession.user.id);
-
         if (rolesError) console.error("Error fetching roles:", rolesError);
-
         setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
+
+        // Fetch full name from profiles
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", currentSession.user.id)
+          .single();
+
+        if (profileError) console.error("Error fetching profile:", profileError);
+        if (profileData?.full_name) setFullName(profileData.full_name);
       }
 
       setLoading(false);
@@ -50,15 +55,14 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Failed to log out");
-    } else {
+    if (error) toast.error("Failed to log out");
+    else {
       toast.success("Logged out successfully");
       navigate("/auth");
     }
   };
 
-  // Helpers for creating Flights and Announcements
+  // Flight & Announcement creators
   const createFlight = async (title: string, content: string, priority: number) => {
     if (!session?.user) return;
 
@@ -70,13 +74,10 @@ const Dashboard = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]);
-
     if (error) {
       console.error(error);
-      toast.error("Failed to create flight. Check console.");
-    } else {
-      toast.success("Flight created successfully");
-    }
+      toast.error("Failed to create flight");
+    } else toast.success("Flight created successfully");
   };
 
   const createAnnouncement = async (title: string, content: string, priority: number) => {
@@ -90,13 +91,10 @@ const Dashboard = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]);
-
     if (error) {
       console.error(error);
-      toast.error("Failed to create announcement. Check console.");
-    } else {
-      toast.success("Announcement created successfully");
-    }
+      toast.error("Failed to create announcement");
+    } else toast.success("Announcement created successfully");
   };
 
   if (loading) {
@@ -114,7 +112,9 @@ const Dashboard = () => {
       {/* HEADER */}
       <header className="shadow sticky top-0 z-10 bg-card border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">FlyPrague</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            Welcome, {fullName}
+          </h1>
           <button
             onClick={handleLogout}
             className="flex items-center px-3 py-1 border rounded hover:bg-gray-100 transition"
