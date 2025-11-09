@@ -19,55 +19,49 @@ const Dashboard = () => {
     let subscription: any;
 
     const init = async () => {
-      // Listen for auth changes
-      subscription = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        if (!session) navigate("/auth", { replace: true });
-      }).data.subscription;
-
-      // Get current session
-      const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Session fetch error:", error);
-        navigate("/auth", { replace: true });
-        return;
-      }
-
-      if (!currentSession?.user) {
-        navigate("/auth", { replace: true });
-        return;
-      }
-
-      setSession(currentSession);
-
       try {
-        // Fetch full name from profiles table
+        // Listen for auth changes
+        subscription = supabase.auth.onAuthStateChange((_event, newSession) => {
+          setSession(newSession);
+          if (!newSession) navigate("/auth", { replace: true });
+        }).data.subscription;
+
+        // Fetch current session
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!currentSession?.user) {
+          navigate("/auth", { replace: true });
+          return;
+        }
+
+        setSession(currentSession);
+
+        const userId = currentSession.user.id;
+
+        // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("full_name")
-          .eq("id", currentSession.user.id)
+          .eq("id", userId)
           .single();
 
         if (profileError) throw profileError;
-        if (profile?.full_name) setFullName(profile.full_name);
-      } catch (err) {
-        console.error("Unable to fetch profile:", err);
-      }
+        setFullName(profile?.full_name || "User");
 
-      try {
-        // Fetch roles
+        // Fetch user roles
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", currentSession.user.id);
+          .eq("user_id", userId);
 
         if (rolesError) throw rolesError;
         setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
-      } catch (err) {
-        console.error("Unable to fetch roles:", err);
+      } catch (err: any) {
+        console.error("Dashboard init error:", err.message || err);
+        toast.error("Unable to fetch user data");
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     init();
@@ -93,38 +87,26 @@ const Dashboard = () => {
 
   const createFlight = async (title: string, content: string, priority: number) => {
     if (!session?.user) return;
-
     const { error } = await supabase.from("flights").insert([{
-      title,
-      content,
-      priority,
+      title, content, priority,
       created_by: session.user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]);
-
-    if (error) {
-      console.error("Create flight error:", error);
-      toast.error("Failed to create flight");
-    } else toast.success("Flight created successfully");
+    if (error) toast.error("Failed to create flight");
+    else toast.success("Flight created successfully");
   };
 
   const createAnnouncement = async (title: string, content: string, priority: number) => {
     if (!session?.user) return;
-
     const { error } = await supabase.from("announcements").insert([{
-      title,
-      content,
-      priority,
+      title, content, priority,
       created_by: session.user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]);
-
-    if (error) {
-      console.error("Create announcement error:", error);
-      toast.error("Failed to create announcement");
-    } else toast.success("Announcement created successfully");
+    if (error) toast.error("Failed to create announcement");
+    else toast.success("Announcement created successfully");
   };
 
   if (loading) {
