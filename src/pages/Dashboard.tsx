@@ -7,7 +7,6 @@ import { Bell, Calendar, LogOut, RefreshCw } from "lucide-react";
 import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
 import { FlightsPanel } from "@/components/FlightsPanel";
 import { UserManagementPanel } from "@/components/UserManagementPanel";
-
 import BackgroundImage from "/Background.png";
 
 const Dashboard = () => {
@@ -19,11 +18,10 @@ const Dashboard = () => {
 
   const [showUserManagement, setShowUserManagement] = useState(false);
 
-  // Data states
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch functions
   const fetchAnnouncements = async () => {
     if (!session?.user) return;
     try {
@@ -55,7 +53,11 @@ const Dashboard = () => {
   };
 
   const fetchAllData = async () => {
+    setIsRefreshing(true);
     await Promise.all([fetchAnnouncements(), fetchFlights()]);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 2000);
   };
 
   useEffect(() => {
@@ -68,56 +70,43 @@ const Dashboard = () => {
           if (!newSession) navigate("/auth", { replace: true });
         }).data.subscription;
 
-        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (!currentSession?.user) {
           navigate("/auth", { replace: true });
           return;
         }
 
         setSession(currentSession);
+
         const userId = currentSession.user.id;
 
-        // Fetch user profile
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("id", userId)
           .single();
-        if (profileError) throw profileError;
         setFullName(profile?.full_name || "User");
 
-        // Fetch user roles
-        const { data: roles, error: rolesError } = await supabase
+        const { data: roles } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", userId);
-        if (rolesError) throw rolesError;
+
         const adminFlag = roles?.some(r => r.role === "admin") ?? false;
         setIsAdmin(adminFlag);
-
         if (adminFlag) setShowUserManagement(true);
 
-        // Initial data fetch
         await fetchAllData();
 
-        // Poll every 10 seconds
-        const interval = setInterval(() => {
-          fetchAllData();
-        }, 10000);
-
+        const interval = setInterval(() => fetchAllData(), 10000);
         return () => clearInterval(interval);
 
-      } catch (err: any) {
-        console.error("Unable to fetch profile or roles:", err.message || err);
-        toast.error("Unable to fetch user data. Please check your permissions.");
       } finally {
         setLoading(false);
       }
     };
 
     init();
-
     return () => {
       if (subscription) subscription.unsubscribe();
     };
@@ -125,9 +114,7 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
+      await supabase.auth.signOut();
       setSession(null);
       navigate("/auth", { replace: true });
       toast.success("Logged out successfully");
@@ -181,37 +168,41 @@ const Dashboard = () => {
       className="min-h-screen bg-cover bg-center"
       style={{ backgroundImage: `url(${BackgroundImage})` }}
     >
-      {/* HEADER */}
       <header className="shadow sticky top-0 z-10 bg-card border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">
-            Welcome, {fullName}
-          </h1>
+          <h1 className="text-xl font-bold text-foreground">Welcome, {fullName}</h1>
+
           <div className="flex items-center gap-4">
-            {/* Manual Refresh */}
+
             <button
               onClick={fetchAllData}
-              className="flex items-center px-3 py-1 border rounded bg-blue-600 text-white border-blue-600"
+              disabled={isRefreshing}
+              className={`flex items-center px-3 py-1 border rounded text-white transition-all 
+                ${isRefreshing ? "bg-blue-400 border-blue-400 cursor-not-allowed" : "bg-blue-600 border-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95"}
+              `}
             >
-              <RefreshCw className="h-4 w-4 mr-2 text-white" />
-              Refresh
+              {isRefreshing ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isRefreshing ? "Loading..." : "Refresh"}
             </button>
 
-            {/* Logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600"
+              className="flex items-center px-3 py-1 border rounded bg-red-600 border-red-600 text-white
+              transition-all hover:bg-red-700 hover:scale-105 active:scale-95"
             >
-              <LogOut className="h-4 w-4 mr-2 text-white" />
+              <LogOut className="h-4 w-4 mr-2" />
               Logout
             </button>
+
           </div>
         </div>
       </header>
 
-      {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Status cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
             <Bell className="h-6 w-6 text-primary" />
@@ -230,7 +221,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-card rounded-lg shadow-sm border p-6">
             <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} data={announcements} />
@@ -240,7 +230,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Toggleable User Management Panel */}
         {showUserManagement && (
           <div className="mt-8 bg-card rounded-lg shadow-sm border p-6">
             <UserManagementPanel />
