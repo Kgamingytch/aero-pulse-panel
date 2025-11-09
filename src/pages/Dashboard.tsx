@@ -15,6 +15,9 @@ const Dashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Toggle for User Management panel
+  const [showUserManagement, setShowUserManagement] = useState(false);
+
   useEffect(() => {
     let subscription: any;
 
@@ -26,7 +29,7 @@ const Dashboard = () => {
           if (!newSession) navigate("/auth", { replace: true });
         }).data.subscription;
 
-        // Get current session
+        // Fetch current session
         const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!currentSession?.user) {
@@ -54,7 +57,11 @@ const Dashboard = () => {
           .eq("user_id", userId);
 
         if (rolesError) throw rolesError;
-        setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
+        const adminFlag = roles?.some(r => r.role === "admin") ?? false;
+        setIsAdmin(adminFlag);
+
+        // Optional: show User Management only for admin
+        if (adminFlag) setShowUserManagement(true);
 
       } catch (err: any) {
         console.error("Unable to fetch profile or roles:", err.message || err);
@@ -166,7 +173,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {isAdmin && (
+        {/* Toggleable User Management Panel */}
+        {showUserManagement && (
           <div className="mt-8 bg-card rounded-lg shadow-sm border p-6">
             <UserManagementPanel />
           </div>
