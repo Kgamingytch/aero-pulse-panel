@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plane, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Flight {
   id: string;
@@ -29,16 +30,17 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    flight_number: "",
-    departure_airport: "",
-    arrival_airport: "",
-    departure_time: "",
-    arrival_time: "",
-    status: "scheduled",
-    gate: "",
-    aircraft_type: "",
-  });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [flightToDelete, setFlightToDelete] = useState<Flight | null>(null);
+
+  const [newFlightNumber, setNewFlightNumber] = useState("");
+  const [newDepartureAirport, setNewDepartureAirport] = useState("");
+  const [newArrivalAirport, setNewArrivalAirport] = useState("");
+  const [newDepartureTime, setNewDepartureTime] = useState("");
+  const [newArrivalTime, setNewArrivalTime] = useState("");
+  const [newStatus, setNewStatus] = useState("scheduled");
+  const [newGate, setNewGate] = useState("");
+  const [newAircraftType, setNewAircraftType] = useState("");
 
   useEffect(() => {
     fetchFlights();
@@ -60,254 +62,287 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
   }, []);
 
   const fetchFlights = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from("flights")
       .select("*")
-      .gte("departure_time", new Date().toISOString())
-      .order("departure_time", { ascending: true })
-      .limit(10);
+      .order("departure_time", { ascending: true });
 
     if (error) {
-      toast.error("Failed to load flights");
-      return;
+      toast.error("Failed to fetch flights");
+      console.error(error);
+    } else {
+      setFlights(data || []);
     }
-
-    setFlights(data || []);
+    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.flight_number || !formData.departure_airport || !formData.arrival_airport || !formData.departure_time || !formData.arrival_time) {
-      toast.error("Please fill in all required fields");
+
+    if (new Date(newArrivalTime) <= new Date(newDepartureTime)) {
+      toast.error("Arrival time must be after departure time");
       return;
     }
 
     setLoading(true);
     const { error } = await supabase.from("flights").insert({
-      ...formData,
-      gate: formData.gate || null,
-      aircraft_type: formData.aircraft_type || null,
+      flight_number: newFlightNumber.trim().toUpperCase(),
+      departure_airport: newDepartureAirport.trim().toUpperCase(),
+      arrival_airport: newArrivalAirport.trim().toUpperCase(),
+      departure_time: newDepartureTime,
+      arrival_time: newArrivalTime,
+      status: newStatus,
+      gate: newGate.trim() || null,
+      aircraft_type: newAircraftType.trim() || null,
     });
 
     if (error) {
       toast.error("Failed to create flight");
+      console.error(error);
     } else {
       toast.success("Flight created!");
-      setFormData({
-        flight_number: "",
-        departure_airport: "",
-        arrival_airport: "",
-        departure_time: "",
-        arrival_time: "",
-        status: "scheduled",
-        gate: "",
-        aircraft_type: "",
-      });
+      setNewFlightNumber("");
+      setNewDepartureAirport("");
+      setNewArrivalAirport("");
+      setNewDepartureTime("");
+      setNewArrivalTime("");
+      setNewStatus("scheduled");
+      setNewGate("");
+      setNewAircraftType("");
       setShowForm(false);
     }
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("flights").delete().eq("id", id);
+  const confirmDelete = (flight: Flight) => {
+    setFlightToDelete(flight);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!flightToDelete) return;
+
+    const { error } = await supabase
+      .from("flights")
+      .delete()
+      .eq("id", flightToDelete.id);
 
     if (error) {
       toast.error("Failed to delete flight");
+      console.error(error);
     } else {
       toast.success("Flight deleted");
     }
+
+    setDeleteDialogOpen(false);
+    setFlightToDelete(null);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "departed":
-        return "bg-primary";
       case "boarding":
-        return "bg-accent";
+        return "default";
       case "delayed":
-        return "bg-destructive";
+        return "destructive";
       case "cancelled":
-        return "bg-destructive";
+        return "destructive";
+      case "departed":
+        return "secondary";
       default:
-        return "bg-muted";
+        return "secondary";
     }
   };
 
   return (
-    <Card className="shadow-card">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Plane className="h-5 w-5 text-primary" />
-          <CardTitle>Next Flights</CardTitle>
-        </div>
-        {isAdmin && (
-          <Button onClick={() => setShowForm(!showForm)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {showForm && isAdmin && (
-          <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary rounded-lg">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="flight_number">Flight Number</Label>
-                <Input
-                  id="flight_number"
-                  value={formData.flight_number}
-                  onChange={(e) => setFormData({ ...formData, flight_number: e.target.value })}
-                  placeholder="AA1234"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                  <SelectTrigger id="status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="boarding">Boarding</SelectItem>
-                    <SelectItem value="departed">Departed</SelectItem>
-                    <SelectItem value="delayed">Delayed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+    <>
+      <Card className="border-0 shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
+          <CardTitle className="text-foreground">Flights</CardTitle>
+          {isAdmin && (
+            <Button onClick={() => setShowForm(!showForm)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {showForm ? "Cancel" : "New"}
+            </Button>
+          )}
+        </CardHeader>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="departure_airport">Departure</Label>
-                <Input
-                  id="departure_airport"
-                  value={formData.departure_airport}
-                  onChange={(e) => setFormData({ ...formData, departure_airport: e.target.value })}
-                  placeholder="JFK"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="arrival_airport">Arrival</Label>
-                <Input
-                  id="arrival_airport"
-                  value={formData.arrival_airport}
-                  onChange={(e) => setFormData({ ...formData, arrival_airport: e.target.value })}
-                  placeholder="LAX"
-                  required
-                />
-              </div>
-            </div>
+        <CardContent className="px-0 pb-0">
+          {isAdmin && showForm && (
+            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 bg-muted rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="flight-number">Flight Number</Label>
+                  <Input
+                    id="flight-number"
+                    value={newFlightNumber}
+                    onChange={(e) => setNewFlightNumber(e.target.value)}
+                    placeholder="AA1234"
+                    disabled={loading}
+                    required
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="departure_time">Departure Time</Label>
-                <Input
-                  id="departure_time"
-                  type="datetime-local"
-                  value={formData.departure_time}
-                  onChange={(e) => setFormData({ ...formData, departure_time: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="arrival_time">Arrival Time</Label>
-                <Input
-                  id="arrival_time"
-                  type="datetime-local"
-                  value={formData.arrival_time}
-                  onChange={(e) => setFormData({ ...formData, arrival_time: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="gate">Gate (Optional)</Label>
-                <Input
-                  id="gate"
-                  value={formData.gate}
-                  onChange={(e) => setFormData({ ...formData, gate: e.target.value })}
-                  placeholder="A12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="aircraft_type">Aircraft (Optional)</Label>
-                <Input
-                  id="aircraft_type"
-                  value={formData.aircraft_type}
-                  onChange={(e) => setFormData({ ...formData, aircraft_type: e.target.value })}
-                  placeholder="Boeing 737"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create"}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        )}
-
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {flights.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No upcoming flights</p>
-          ) : (
-            flights.map((flight) => (
-              <div
-                key={flight.id}
-                className="p-4 bg-card border rounded-lg hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-lg">{flight.flight_number}</h3>
-                      <Badge className={getStatusColor(flight.status)}>
-                        {flight.status}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">From</p>
-                        <p className="font-semibold">{flight.departure_airport}</p>
-                        <p className="text-xs">{new Date(flight.departure_time).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">To</p>
-                        <p className="font-semibold">{flight.arrival_airport}</p>
-                        <p className="text-xs">{new Date(flight.arrival_time).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    {(flight.gate || flight.aircraft_type) && (
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        {flight.gate && <span>Gate: {flight.gate}</span>}
-                        {flight.aircraft_type && <span>Aircraft: {flight.aircraft_type}</span>}
-                      </div>
-                    )}
-                  </div>
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(flight.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={newStatus} onValueChange={setNewStatus} disabled={loading}>
+                    <SelectTrigger id="status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="boarding">Boarding</SelectItem>
+                      <SelectItem value="departed">Departed</SelectItem>
+                      <SelectItem value="delayed">Delayed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            ))
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="departure-airport">From (IATA)</Label>
+                  <Input
+                    id="departure-airport"
+                    value={newDepartureAirport}
+                    onChange={(e) => setNewDepartureAirport(e.target.value)}
+                    placeholder="PRG"
+                    maxLength={3}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="arrival-airport">To (IATA)</Label>
+                  <Input
+                    id="arrival-airport"
+                    value={newArrivalAirport}
+                    onChange={(e) => setNewArrivalAirport(e.target.value)}
+                    placeholder="LHR"
+                    maxLength={3}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="departure-time">Departure</Label>
+                  <Input
+                    id="departure-time"
+                    type="datetime-local"
+                    value={newDepartureTime}
+                    onChange={(e) => setNewDepartureTime(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="arrival-time">Arrival</Label>
+                  <Input
+                    id="arrival-time"
+                    type="datetime-local"
+                    value={newArrivalTime}
+                    onChange={(e) => setNewArrivalTime(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gate">Gate (Optional)</Label>
+                  <Input
+                    id="gate"
+                    value={newGate}
+                    onChange={(e) => setNewGate(e.target.value)}
+                    placeholder="A12"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="aircraft">Aircraft (Optional)</Label>
+                  <Input
+                    id="aircraft"
+                    value={newAircraftType}
+                    onChange={(e) => setNewAircraftType(e.target.value)}
+                    placeholder="Boeing 737"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Creating..." : "Create Flight"}
+              </Button>
+            </form>
           )}
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="space-y-3">
+            {loading && flights.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">Loading...</p>
+            ) : flights.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No flights yet</p>
+            ) : (
+              flights.map((flight) => (
+                <div key={flight.id} className="p-4 bg-muted rounded-lg">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-foreground">{flight.flight_number}</h3>
+                        <Badge variant={getStatusColor(flight.status)}>{flight.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {flight.departure_airport} → {flight.arrival_airport}
+                      </p>
+                    </div>
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => confirmDelete(flight)}
+                        className="shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>Departs: {new Date(flight.departure_time).toLocaleString()}</p>
+                    <p>Arrives: {new Date(flight.arrival_time).toLocaleString()}</p>
+                    {flight.gate && <p>Gate: {flight.gate}</p>}
+                    {flight.aircraft_type && <p>Aircraft: {flight.aircraft_type}</p>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Flight</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete flight {flightToDelete?.flight_number}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

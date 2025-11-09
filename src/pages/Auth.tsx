@@ -56,55 +56,52 @@ const Auth = () => {
   };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center"
-      style={{ backgroundImage: `url(${BackgroundImage})` }}
-    >
-      <div className="text-center space-y-8 backdrop-blur-[1px] px-6 py-10 rounded-lg">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-card rounded-lg shadow-elevated border p-8 space-y-6">
+          {/* LOGO */}
+          <img
+            src={LogoImage}
+            alt="FlyPrague Logo"
+            className="h-20 w-auto mx-auto"
+          />
 
-        {/* LOGO */}
-        <img
-          src={LogoImage}
-          alt="FlyPrague Logo"
-          className="h-24 w-auto mx-auto"
-        />
+          {/* TITLE */}
+          <h1 className="text-3xl font-bold text-center text-foreground">
+            FlyPrague
+          </h1>
 
-        {/* TITLE */}
-        <h1 className="text-4xl font-bold text-white drop-shadow">
-          FlyPrague
-        </h1>
+          {/* LOGIN FORM */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
 
-        {/* LOGIN FORM */}
-        <form onSubmit={handleLogin} className="space-y-4 max-w-sm mx-auto text-left">
-          <div className="space-y-2">
-            <Label htmlFor="login-email" className="text-white">Email</Label>
-            <Input
-              id="login-email"
-              type="email"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="login-password" className="text-white">Password</Label>
-            <Input
-              id="login-password"
-              type="password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Log-In"}
-          </Button>
-        </form>
-
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Log In"}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

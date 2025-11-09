@@ -8,23 +8,23 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 30% 8%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 220 30% 15%;
 
-    --card: 220 25% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 15%;
 
-    --popover: 220 25% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 15%;
 
     --primary: 220 70% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 25% 15%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 30% 96%;
+    --secondary-foreground: 220 30% 15%;
 
-    --muted: 220 25% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 30% 96%;
+    --muted-foreground: 220 20% 45%;
 
     --accent: 0 75% 45%;
     --accent-foreground: 0 0% 100%;
@@ -32,25 +32,25 @@ All colors MUST be HSL.
     --destructive: 0 75% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 25% 18%;
-    --input: 220 25% 18%;
+    --border: 220 30% 85%;
+    --input: 220 30% 85%;
     --ring: 220 70% 45%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 220 30% 10%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 30% 15%;
     --sidebar-primary: 220 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 15%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 25% 13%;
-    --sidebar-ring: 0 75% 45%;
+    --sidebar-accent: 220 30% 96%;
+    --sidebar-accent-foreground: 220 30% 15%;
+    --sidebar-border: 220 30% 85%;
+    --sidebar-ring: 220 70% 45%;
 
-    --gradient-aviation: linear-gradient(135deg, hsl(220 70% 25%) 0%, hsl(220 70% 45%) 50%, hsl(0 75% 35%) 100%);
-    --gradient-alert: linear-gradient(135deg, hsl(0 75% 35%) 0%, hsl(0 75% 50%) 100%);
-    --shadow-card: 0 2px 8px hsl(0 0% 0% / 0.4);
-    --shadow-elevated: 0 8px 24px hsl(0 0% 0% / 0.5);
+    --gradient-aviation: linear-gradient(135deg, hsl(220 70% 50%) 0%, hsl(220 70% 60%) 100%);
+    --gradient-alert: linear-gradient(135deg, hsl(0 75% 45%) 0%, hsl(0 75% 55%) 100%);
+    --shadow-card: 0 1px 3px hsl(220 30% 15% / 0.1);
+    --shadow-elevated: 0 4px 12px hsl(220 30% 15% / 0.15);
   }
 
   .dark {

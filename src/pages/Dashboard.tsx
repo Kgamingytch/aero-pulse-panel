@@ -51,15 +51,8 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${BackgroundImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <p className="text-gray-900 text-xl animate-pulse">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-foreground text-xl animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -67,20 +60,13 @@ const Dashboard = () => {
   if (!session) return null;
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        backgroundImage: `url(${BackgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
+    <div className="min-h-screen bg-muted">
       {/* HEADER */}
-      <header className="shadow sticky top-0 z-10 bg-white">
+      <header className="shadow sticky top-0 z-10 bg-card border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">FlyPrague</h1>
+          <h1 className="text-xl font-bold text-foreground">FlyPrague</h1>
           <Button onClick={handleLogout} size="sm" variant="outline">
-            <LogOut className="h-4 w-4 mr-2 text-gray-900" />
+            <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>
         </div>
@@ -89,41 +75,41 @@ const Dashboard = () => {
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Unified Top Card */}
-        <div className="bg-gray-50 rounded-lg shadow p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-card rounded-lg shadow-sm border p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Bell className="h-6 w-6 text-blue-600" />
+              <Bell className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Active</p>
-              <p className="text-xl font-bold text-gray-900">Announcements</p>
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-xl font-bold text-foreground">Announcements</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-green-600" />
+              <Calendar className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Scheduled</p>
-              <p className="text-xl font-bold text-gray-900">Flights</p>
+              <p className="text-sm text-muted-foreground">Scheduled</p>
+              <p className="text-xl font-bold text-foreground">Flights</p>
             </div>
           </div>
         </div>
 
         {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-gray-50 rounded-lg shadow p-4 text-gray-900">
-            <AnnouncementsPanel isAdmin={isAdmin} lightTheme />
+          <div className="bg-card rounded-lg shadow-sm border p-6">
+            <AnnouncementsPanel isAdmin={isAdmin} />
           </div>
-          <div className="bg-gray-50 rounded-lg shadow p-4 text-gray-900">
-            <FlightsPanel isAdmin={isAdmin} lightTheme />
+          <div className="bg-card rounded-lg shadow-sm border p-6">
+            <FlightsPanel isAdmin={isAdmin} />
           </div>
         </div>
 
         {isAdmin && (
-          <div className="mt-8 bg-gray-50 rounded-lg shadow p-4 text-gray-900">
-            <UserManagementPanel lightTheme />
+          <div className="mt-8 bg-card rounded-lg shadow-sm border p-6">
+            <UserManagementPanel />
           </div>
         )}
       </main>
