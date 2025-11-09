@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { Bell, Calendar, LogOut } from "lucide-react";
+import { Bell, Calendar, LogOut, RefreshCw } from "lucide-react";
 import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
 import { FlightsPanel } from "@/components/FlightsPanel";
 import { UserManagementPanel } from "@/components/UserManagementPanel";
@@ -17,21 +17,57 @@ const Dashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Toggleable User Management
   const [showUserManagement, setShowUserManagement] = useState(false);
+
+  // Data states
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [flights, setFlights] = useState<any[]>([]);
+
+  // Fetch functions
+  const fetchAnnouncements = async () => {
+    if (!session?.user) return;
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (err) {
+      console.error("Failed to fetch announcements:", err);
+      toast.error("Unable to fetch announcements");
+    }
+  };
+
+  const fetchFlights = async () => {
+    if (!session?.user) return;
+    try {
+      const { data, error } = await supabase
+        .from("flights")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setFlights(data || []);
+    } catch (err) {
+      console.error("Failed to fetch flights:", err);
+      toast.error("Unable to fetch flights");
+    }
+  };
+
+  const fetchAllData = async () => {
+    await Promise.all([fetchAnnouncements(), fetchFlights()]);
+  };
 
   useEffect(() => {
     let subscription: any;
 
     const init = async () => {
       try {
-        // Listen for auth state changes
         subscription = supabase.auth.onAuthStateChange((_event, newSession) => {
           setSession(newSession);
           if (!newSession) navigate("/auth", { replace: true });
         }).data.subscription;
 
-        // Get current session
         const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!currentSession?.user) {
@@ -60,8 +96,17 @@ const Dashboard = () => {
         const adminFlag = roles?.some(r => r.role === "admin") ?? false;
         setIsAdmin(adminFlag);
 
-        // Show User Management only for admin by default
         if (adminFlag) setShowUserManagement(true);
+
+        // Initial data fetch
+        await fetchAllData();
+
+        // Poll every 10 seconds
+        const interval = setInterval(() => {
+          fetchAllData();
+        }, 10000);
+
+        return () => clearInterval(interval);
 
       } catch (err: any) {
         console.error("Unable to fetch profile or roles:", err.message || err);
@@ -102,6 +147,7 @@ const Dashboard = () => {
     }]);
     if (error) toast.error("Failed to create flight");
     else toast.success("Flight created successfully");
+    await fetchFlights();
   };
 
   const createAnnouncement = async (title: string, content: string, priority: number) => {
@@ -114,6 +160,7 @@ const Dashboard = () => {
     }]);
     if (error) toast.error("Failed to create announcement");
     else toast.success("Announcement created successfully");
+    await fetchAnnouncements();
   };
 
   if (loading) {
@@ -140,13 +187,25 @@ const Dashboard = () => {
           <h1 className="text-xl font-bold text-foreground">
             Welcome, {fullName}
           </h1>
-          <button
-            onClick={handleLogout}
-            className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600"
-          >
-            <LogOut className="h-4 w-4 mr-2 text-white" />
-            Logout
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Manual Refresh */}
+            <button
+              onClick={fetchAllData}
+              className="flex items-center px-3 py-1 border rounded bg-blue-600 text-white border-blue-600"
+            >
+              <RefreshCw className="h-4 w-4 mr-2 text-white" />
+              Refresh
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600"
+            >
+              <LogOut className="h-4 w-4 mr-2 text-white" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -174,10 +233,10 @@ const Dashboard = () => {
         {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-card rounded-lg shadow-sm border p-6">
-            <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} />
+            <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} data={announcements} />
           </div>
           <div className="bg-card rounded-lg shadow-sm border p-6">
-            <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} />
+            <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} data={flights} />
           </div>
         </div>
 
