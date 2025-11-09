@@ -8,14 +8,14 @@ import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
 import { FlightsPanel } from "@/components/FlightsPanel";
 import { UserManagementPanel } from "@/components/UserManagementPanel";
 
+import BackgroundImage from "/Background.png";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [fullName, setFullName] = useState("User");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Toggle for User Management panel
   const [showUserManagement, setShowUserManagement] = useState(false);
 
   useEffect(() => {
@@ -23,13 +23,11 @@ const Dashboard = () => {
 
     const init = async () => {
       try {
-        // Listen for auth state changes
         subscription = supabase.auth.onAuthStateChange((_event, newSession) => {
           setSession(newSession);
           if (!newSession) navigate("/auth", { replace: true });
         }).data.subscription;
 
-        // Fetch current session
         const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!currentSession?.user) {
@@ -40,27 +38,21 @@ const Dashboard = () => {
         setSession(currentSession);
         const userId = currentSession.user.id;
 
-        // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("id", userId)
           .single();
-
         if (profileError) throw profileError;
         setFullName(profile?.full_name || "User");
 
-        // Fetch user roles
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", userId);
-
         if (rolesError) throw rolesError;
         const adminFlag = roles?.some(r => r.role === "admin") ?? false;
         setIsAdmin(adminFlag);
-
-        // Optional: show User Management only for admin
         if (adminFlag) setShowUserManagement(true);
 
       } catch (err: any) {
@@ -118,7 +110,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: `url(${BackgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <p className="text-foreground text-xl animate-pulse">Loading...</p>
       </div>
     );
@@ -127,7 +119,10 @@ const Dashboard = () => {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: `url(${BackgroundImage})` }}
+    >
       {/* HEADER */}
       <header className="shadow sticky top-0 z-10 bg-card border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
