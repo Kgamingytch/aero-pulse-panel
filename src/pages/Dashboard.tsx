@@ -16,6 +16,8 @@ const Dashboard = () => {
   const [fullName, setFullName] = useState("User");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Toggleable User Management
   const [showUserManagement, setShowUserManagement] = useState(false);
 
   useEffect(() => {
@@ -23,11 +25,13 @@ const Dashboard = () => {
 
     const init = async () => {
       try {
+        // Listen for auth state changes
         subscription = supabase.auth.onAuthStateChange((_event, newSession) => {
           setSession(newSession);
           if (!newSession) navigate("/auth", { replace: true });
         }).data.subscription;
 
+        // Get current session
         const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!currentSession?.user) {
@@ -38,6 +42,7 @@ const Dashboard = () => {
         setSession(currentSession);
         const userId = currentSession.user.id;
 
+        // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("full_name")
@@ -46,6 +51,7 @@ const Dashboard = () => {
         if (profileError) throw profileError;
         setFullName(profile?.full_name || "User");
 
+        // Fetch user roles
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
@@ -53,6 +59,8 @@ const Dashboard = () => {
         if (rolesError) throw rolesError;
         const adminFlag = roles?.some(r => r.role === "admin") ?? false;
         setIsAdmin(adminFlag);
+
+        // Show User Management only for admin by default
         if (adminFlag) setShowUserManagement(true);
 
       } catch (err: any) {
@@ -110,7 +118,10 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: `url(${BackgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundImage: `url(${BackgroundImage})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      >
         <p className="text-foreground text-xl animate-pulse">Loading...</p>
       </div>
     );
@@ -130,18 +141,18 @@ const Dashboard = () => {
             Welcome, {fullName}
           </h1>
           <button
-  onClick={handleLogout}
-  className="flex items-center px-3 py-1 border rounded hover:bg-gray-700 transition text-white border-white"
->
-  <LogOut className="h-4 w-4 mr-2 text-white" />
-  Logout
-</button>
-
+            onClick={handleLogout}
+            className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600"
+          >
+            <LogOut className="h-4 w-4 mr-2 text-white" />
+            Logout
+          </button>
         </div>
       </header>
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Status cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
             <Bell className="h-6 w-6 text-primary" />
@@ -160,6 +171,7 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-card rounded-lg shadow-sm border p-6">
             <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} />
