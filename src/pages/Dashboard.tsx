@@ -20,13 +20,13 @@ const Dashboard = () => {
 
     const init = async () => {
       try {
-        // Listen for auth changes
+        // Listen for auth state changes
         subscription = supabase.auth.onAuthStateChange((_event, newSession) => {
           setSession(newSession);
           if (!newSession) navigate("/auth", { replace: true });
         }).data.subscription;
 
-        // Fetch current session
+        // Get current session
         const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!currentSession?.user) {
@@ -35,7 +35,6 @@ const Dashboard = () => {
         }
 
         setSession(currentSession);
-
         const userId = currentSession.user.id;
 
         // Fetch user profile
@@ -56,9 +55,10 @@ const Dashboard = () => {
 
         if (rolesError) throw rolesError;
         setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
+
       } catch (err: any) {
-        console.error("Dashboard init error:", err.message || err);
-        toast.error("Unable to fetch user data");
+        console.error("Unable to fetch profile or roles:", err.message || err);
+        toast.error("Unable to fetch user data. Please check your permissions.");
       } finally {
         setLoading(false);
       }
