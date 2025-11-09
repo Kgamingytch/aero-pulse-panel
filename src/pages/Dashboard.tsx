@@ -6,123 +6,192 @@ import { toast } from "sonner";
 import { Bell, Calendar, LogOut, RefreshCw } from "lucide-react";
 import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
 import { FlightsPanel } from "@/components/FlightsPanel";
+import { UserManagementPanel } from "@/components/UserManagementPanel";
 
-const BackgroundImage = "/Background.png";
+import BackgroundImage from "/Background.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
+  const [fullName, setFullName] = useState("User");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [fullName, setFullName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
+  const [showUserManagement, setShowUserManagement] = useState(false);
+
+  // Data states
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
 
-  // Fetch full_name from profiles
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", userId)
-      .single();
-    if (data?.full_name) setFullName(data.full_name);
-  };
-
-  // Fetch admin role
-  const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    setIsAdmin(data?.some(r => r.role === "admin") ?? false);
-  };
-
-  // Fetch announcements
+  // Fetch functions
   const fetchAnnouncements = async () => {
-    const { data, error } = await supabase
-      .from("announcements")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) return;
-    setAnnouncements(data || []);
+    if (!session?.user) return;
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (err) {
+      console.error("Failed to fetch announcements:", err);
+      toast.error("Unable to fetch announcements");
+    }
   };
 
-  // Fetch flights
   const fetchFlights = async () => {
-    const { data, error } = await supabase
-      .from("flights")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) return;
-    setFlights(data || []);
+    if (!session?.user) return;
+    try {
+      const { data, error } = await supabase
+        .from("flights")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setFlights(data || []);
+    } catch (err) {
+      console.error("Failed to fetch flights:", err);
+      toast.error("Unable to fetch flights");
+    }
   };
 
   const fetchAllData = async () => {
-    if (!session?.user) return;
     await Promise.all([fetchAnnouncements(), fetchFlights()]);
   };
 
-  // Auth + initial data load
   useEffect(() => {
-    const load = async () => {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      if (!s) return navigate("/auth");
-      setSession(s);
+    let subscription: any;
 
-      await fetchProfile(s.user.id);
-      await fetchRole(s.user.id);
-      await fetchAllData();
+    const init = async () => {
+      try {
+        subscription = supabase.auth.onAuthStateChange((_event, newSession) => {
+          setSession(newSession);
+          if (!newSession) navigate("/auth", { replace: true });
+        }).data.subscription;
 
-      setLoading(false);
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!currentSession?.user) {
+          navigate("/auth", { replace: true });
+          return;
+        }
+
+        setSession(currentSession);
+        const userId = currentSession.user.id;
+
+        // Fetch user profile
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", userId)
+          .single();
+        if (profileError) throw profileError;
+        setFullName(profile?.full_name || "User");
+
+        // Fetch user roles
+        const { data: roles, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
+        if (rolesError) throw rolesError;
+        const adminFlag = roles?.some(r => r.role === "admin") ?? false;
+        setIsAdmin(adminFlag);
+
+        if (adminFlag) setShowUserManagement(true);
+
+        // Initial data fetch
+        await fetchAllData();
+
+        // Poll every 10 seconds
+        const interval = setInterval(() => {
+          fetchAllData();
+        }, 10000);
+
+        return () => clearInterval(interval);
+
+      } catch (err: any) {
+        console.error("Unable to fetch profile or roles:", err.message || err);
+        toast.error("Unable to fetch user data. Please check your permissions.");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    load();
+    init();
 
-    // Poll every 10 seconds
-    const interval = setInterval(() => {
-      fetchAllData();
-    }, 10000);
-
-    return () => clearInterval(interval);
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast.success("Logged out!");
-    navigate("/auth");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      setSession(null);
+      navigate("/auth", { replace: true });
+      toast.success("Logged out successfully");
+    } catch (err) {
+      console.error("Logout error:", err);
+      toast.error("Failed to log out");
+    }
+  };
+
+  const createFlight = async (title: string, content: string, priority: number) => {
+    if (!session?.user) return;
+    const { error } = await supabase.from("flights").insert([{
+      title, content, priority,
+      created_by: session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }]);
+    if (error) toast.error("Failed to create flight");
+    else toast.success("Flight created successfully");
+    await fetchFlights();
+  };
+
+  const createAnnouncement = async (title: string, content: string, priority: number) => {
+    if (!session?.user) return;
+    const { error } = await supabase.from("announcements").insert([{
+      title, content, priority,
+      created_by: session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }]);
+    if (error) toast.error("Failed to create announcement");
+    else toast.success("Announcement created successfully");
+    await fetchAnnouncements();
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white text-xl">
-        Loading...
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundImage: `url(${BackgroundImage})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        <p className="text-foreground text-xl animate-pulse">Loading...</p>
       </div>
     );
   }
 
+  if (!session) return null;
+
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-fixed"
+      className="min-h-screen bg-cover bg-center"
       style={{ backgroundImage: `url(${BackgroundImage})` }}
     >
       {/* HEADER */}
-      <header className="shadow bg-black/60 backdrop-blur-sm border-b border-white/20 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between text-white">
-
-          <h1 className="text-xl font-bold">
-            Welcome, {fullName || "User"}
+      <header className="shadow sticky top-0 z-10 bg-card border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">
+            Welcome, {fullName}
           </h1>
-
           <div className="flex items-center gap-4">
-            {/* Refresh */}
+            {/* Manual Refresh */}
             <button
-              onClick={async () => {
-                await fetchAllData();
-                toast.success("Refreshed!");
-              }}
-              className="flex items-center px-3 py-1 border rounded bg-blue-600 text-white border-blue-600 
-                         transition-transform duration-150 active:scale-95 select-none shadow-sm"
+              onClick={fetchAllData}
+              className="flex items-center px-3 py-1 border rounded bg-blue-600 text-white border-blue-600"
             >
               <RefreshCw className="h-4 w-4 mr-2 text-white" />
               Refresh
@@ -131,43 +200,52 @@ const Dashboard = () => {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600 
-                         transition-transform duration-150 active:scale-95 select-none shadow-sm"
+              className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600"
             >
               <LogOut className="h-4 w-4 mr-2 text-white" />
               Logout
             </button>
           </div>
-
         </div>
       </header>
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-
-        {/* Status Header */}
-        <div className="bg-black/40 backdrop-blur-sm text-white rounded-lg shadow-sm border border-white/20 p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex items-center gap-4">
-            <Bell className="h-6 w-6 text-yellow-300" />
-            <p className="text-xl font-semibold">Announcements</p>
+        {/* Status cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
+            <Bell className="h-6 w-6 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-xl font-bold text-foreground">Announcements</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Calendar className="h-6 w-6 text-blue-300" />
-            <p className="text-xl font-semibold">Flights</p>
+          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
+            <Calendar className="h-6 w-6 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Scheduled</p>
+              <p className="text-xl font-bold text-foreground">Flights</p>
+            </div>
           </div>
         </div>
 
         {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-white/20 p-6 text-white">
-            <AnnouncementsPanel isAdmin={isAdmin} data={announcements} />
+          <div className="bg-card rounded-lg shadow-sm border p-6">
+            <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} data={announcements} />
           </div>
-          <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-white/20 p-6 text-white">
-            <FlightsPanel isAdmin={isAdmin} data={flights} />
+          <div className="bg-card rounded-lg shadow-sm border p-6">
+            <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} data={flights} />
           </div>
         </div>
 
+        {/* Toggleable User Management Panel */}
+        {showUserManagement && (
+          <div className="mt-8 bg-card rounded-lg shadow-sm border p-6">
+            <UserManagementPanel />
+          </div>
+        )}
       </main>
     </div>
   );
