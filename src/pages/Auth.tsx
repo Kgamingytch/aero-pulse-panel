@@ -56,7 +56,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
+      style={{ backgroundImage: `url(${BackgroundImage})` }}
+    >
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg shadow-elevated border p-8 space-y-6">
           {/* LOGO */}
