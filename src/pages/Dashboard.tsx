@@ -130,12 +130,13 @@ const Dashboard = () => {
             Welcome, {fullName}
           </h1>
           <button
-            onClick={handleLogout}
-            className="flex items-center px-3 py-1 border rounded hover:bg-gray-100 transition"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </button>
+  onClick={handleLogout}
+  className="flex items-center px-3 py-1 border rounded hover:bg-gray-700 transition text-white border-white"
+>
+  <LogOut className="h-4 w-4 mr-2 text-white" />
+  Logout
+</button>
+
         </div>
       </header>
 
