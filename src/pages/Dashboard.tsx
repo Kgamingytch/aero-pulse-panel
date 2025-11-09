@@ -173,47 +173,47 @@ const Dashboard = () => {
           <h1 className="text-xl font-bold text-foreground">Welcome, {fullName}</h1>
 
           <div className="flex items-center gap-4">
+
             <button
               onClick={fetchAllData}
               disabled={isRefreshing}
-              className={`flex items-center px-4 py-2 border rounded-lg text-white transition-all duration-300 ease-in-out transform 
-                ${isRefreshing 
-                  ? "bg-blue-400 border-blue-400 cursor-not-allowed animate-pulse" 
-                  : "bg-blue-600 border-blue-600 hover:bg-blue-700 hover:shadow-lg hover:scale-105 active:scale-95 hover:rotate-1"
-                }`}
+              className={`flex items-center px-3 py-1 border rounded text-white transition-all 
+                ${isRefreshing ? "bg-blue-400 border-blue-400 cursor-not-allowed" : "bg-blue-600 border-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95"}
+              `}
             >
               {isRefreshing ? (
-                <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <RefreshCw className="h-5 w-5 mr-2 transition-transform duration-200 hover:rotate-180" />
+                <RefreshCw className="h-4 w-4 mr-2" />
               )}
               {isRefreshing ? "Loading..." : "Refresh"}
             </button>
 
             <button
               onClick={handleLogout}
-              className="flex items-center px-4 py-2 border rounded-lg bg-red-600 border-red-600 text-white
-              transition-all duration-300 ease-in-out transform hover:bg-red-700 hover:shadow-lg hover:scale-105 active:scale-95 hover:-rotate-1"
+              className="flex items-center px-3 py-1 border rounded bg-red-600 border-red-600 text-white
+              transition-all hover:bg-red-700 hover:scale-105 active:scale-95"
             >
-              <LogOut className="h-5 w-5 mr-2 transition-transform duration-200 hover:translate-x-1" />
+              <LogOut className="h-4 w-4 mr-2" />
               Logout
             </button>
+
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4 transition-all duration-300 ease-in-out transform hover:shadow-md hover:scale-102 hover:-translate-y-1">
-            <Bell className="h-6 w-6 text-primary transition-transform duration-200 hover:scale-110" />
+          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
+            <Bell className="h-6 w-6 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">Active</p>
               <p className="text-xl font-bold text-foreground">Announcements</p>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4 transition-all duration-300 ease-in-out transform hover:shadow-md hover:scale-102 hover:-translate-y-1">
-            <Calendar className="h-6 w-6 text-primary transition-transform duration-200 hover:scale-110" />
+          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
+            <Calendar className="h-6 w-6 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">Scheduled</p>
               <p className="text-xl font-bold text-foreground">Flights</p>
@@ -222,16 +222,16 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-card rounded-lg shadow-sm border p-6 transition-all duration-500 ease-in-out animate-fade-in-up">
+          <div className="bg-card rounded-lg shadow-sm border p-6">
             <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} data={announcements} />
           </div>
-          <div className="bg-card rounded-lg shadow-sm border p-6 transition-all duration-500 ease-in-out animate-fade-in-up animation-delay-200">
+          <div className="bg-card rounded-lg shadow-sm border p-6">
             <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} data={flights} />
           </div>
         </div>
 
         {showUserManagement && (
-          <div className="mt-8 bg-card rounded-lg shadow-sm border p-6 transition-all duration-500 ease-in-out animate-fade-in-up animation-delay-400">
+          <div className="mt-8 bg-card rounded-lg shadow-sm border p-6">
             <UserManagementPanel />
           </div>
         )}
