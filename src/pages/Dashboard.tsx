@@ -16,52 +16,115 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let subscription: any;
+
     const init = async () => {
       // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      subscription = supabase.auth.onAuthStateChange((_event, session) => {
         setSession(session);
-        if (!session) navigate("/auth");
-      });
+        if (!session) navigate("/auth", { replace: true });
+      }).data.subscription;
 
       // Get current session
       const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-      if (error) console.error("Session error:", error);
-      if (!currentSession) return navigate("/auth");
+      if (error) {
+        console.error("Session fetch error:", error);
+        navigate("/auth", { replace: true });
+        return;
+      }
+
+      if (!currentSession?.user) {
+        navigate("/auth", { replace: true });
+        return;
+      }
+
       setSession(currentSession);
 
-      // Fetch full name from profiles
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", currentSession.user.id)
-        .single();
+      try {
+        // Fetch full name from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", currentSession.user.id)
+          .single();
 
-      if (profileError) console.error("Profile fetch error:", profileError);
-      if (profile?.full_name) setFullName(profile.full_name);
+        if (profileError) throw profileError;
+        if (profile?.full_name) setFullName(profile.full_name);
+      } catch (err) {
+        console.error("Unable to fetch profile:", err);
+      }
 
-      // Check admin role
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", currentSession.user.id);
+      try {
+        // Fetch roles
+        const { data: roles, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", currentSession.user.id);
 
-      if (rolesError) console.error("Roles fetch error:", rolesError);
-      setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
+        if (rolesError) throw rolesError;
+        setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
+      } catch (err) {
+        console.error("Unable to fetch roles:", err);
+      }
 
       setLoading(false);
-      return () => subscription.unsubscribe();
     };
 
     init();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) toast.error("Logout failed");
-    else {
-      toast.success("Logged out");
-      navigate("/auth");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      setSession(null);
+      navigate("/auth", { replace: true });
+      toast.success("Logged out successfully");
+    } catch (err) {
+      console.error("Logout error:", err);
+      toast.error("Failed to log out");
     }
+  };
+
+  const createFlight = async (title: string, content: string, priority: number) => {
+    if (!session?.user) return;
+
+    const { error } = await supabase.from("flights").insert([{
+      title,
+      content,
+      priority,
+      created_by: session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }]);
+
+    if (error) {
+      console.error("Create flight error:", error);
+      toast.error("Failed to create flight");
+    } else toast.success("Flight created successfully");
+  };
+
+  const createAnnouncement = async (title: string, content: string, priority: number) => {
+    if (!session?.user) return;
+
+    const { error } = await supabase.from("announcements").insert([{
+      title,
+      content,
+      priority,
+      created_by: session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }]);
+
+    if (error) {
+      console.error("Create announcement error:", error);
+      toast.error("Failed to create announcement");
+    } else toast.success("Announcement created successfully");
   };
 
   if (loading) {
@@ -71,6 +134,8 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  if (!session) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,7 +157,6 @@ const Dashboard = () => {
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
             <Bell className="h-6 w-6 text-primary" />
@@ -111,13 +175,12 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-card rounded-lg shadow-sm border p-6">
-            <AnnouncementsPanel isAdmin={isAdmin} />
+            <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} />
           </div>
           <div className="bg-card rounded-lg shadow-sm border p-6">
-            <FlightsPanel isAdmin={isAdmin} />
+            <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} />
           </div>
         </div>
 
