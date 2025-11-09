@@ -4,8 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Bell, Calendar, LogOut, RefreshCw } from "lucide-react";
-import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
-import { FlightsPanel } from "@/components/FlightsPanel";
 import { UserManagementPanel } from "@/components/UserManagementPanel";
 import BackgroundImage from "/Background.png";
 
@@ -21,6 +19,9 @@ const Dashboard = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [deletingAnnouncementId, setDeletingAnnouncementId] = useState<string | null>(null);
+  const [deletingFlightId, setDeletingFlightId] = useState<string | null>(null);
 
   const fetchAnnouncements = async () => {
     if (!session?.user) return;
@@ -146,6 +147,26 @@ const Dashboard = () => {
     if (error) toast.error("Failed to create announcement");
     else toast.success("Announcement created successfully");
     await fetchAnnouncements();
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    setDeletingAnnouncementId(id);
+    // Replace with your actual delete logic (e.g., API call to delete from database)
+    setTimeout(() => {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      setDeletingAnnouncementId(null);
+      toast.success("Announcement deleted");
+    }, 500); // Match animation duration
+  };
+
+  const handleDeleteFlight = async (id: string) => {
+    setDeletingFlightId(id);
+    // Replace with your actual delete logic (e.g., API call to delete from database)
+    setTimeout(() => {
+      setFlights(prev => prev.filter(f => f.id !== id));
+      setDeletingFlightId(null);
+      toast.success("Flight deleted");
+    }, 500); // Match animation duration
   };
 
   if (loading) {
@@ -294,10 +315,82 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-card rounded-lg shadow-sm border p-6 transition-all duration-500 ease-in-out animate-fade-in-up">
-            <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} data={announcements} />
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Announcements</h2>
+              <ul className="space-y-4">
+                {announcements.map((announcement) => (
+                  <li
+                    key={announcement.id}
+                    className={`p-4 border rounded-lg transition-all duration-300 ease-in-out ${
+                      deletingAnnouncementId === announcement.id ? "animate-fade-out-up" : ""
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{announcement.title}</h3>
+                        <p className="text-sm text-muted-foreground">{announcement.content}</p>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteAnnouncement(announcement.id)}
+                          className="delete-btn text-red-500 hover:text-red-700 transition-colors duration-200"
+                          onMouseEnter={(e) => {
+                            const item = e.currentTarget.closest("li");
+                            if (item) item.classList.add("bg-red-500", "text-white", "!text-white");
+                          }}
+                          onMouseLeave={(e) => {
+                            const item = e.currentTarget.closest("li");
+                            if (item) item.classList.remove("bg-red-500", "text-white", "!text-white");
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {/* Add create form if needed */}
+            </div>
           </div>
           <div className="bg-card rounded-lg shadow-sm border p-6 transition-all duration-500 ease-in-out animate-fade-in-up animation-delay-200">
-            <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} data={flights} />
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Flights</h2>
+              <ul className="space-y-4">
+                {flights.map((flight) => (
+                  <li
+                    key={flight.id}
+                    className={`p-4 border rounded-lg transition-all duration-300 ease-in-out ${
+                      deletingFlightId === flight.id ? "animate-fade-out-up" : ""
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{flight.title}</h3>
+                        <p className="text-sm text-muted-foreground">{flight.content}</p>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteFlight(flight.id)}
+                          className="delete-btn text-red-500 hover:text-red-700 transition-colors duration-200"
+                          onMouseEnter={(e) => {
+                            const item = e.currentTarget.closest("li");
+                            if (item) item.classList.add("bg-red-500", "text-white", "!text-white");
+                          }}
+                          onMouseLeave={(e) => {
+                            const item = e.currentTarget.closest("li");
+                            if (item) item.classList.remove("bg-red-500", "text-white", "!text-white");
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {/* Add create form if needed */}
+            </div>
           </div>
         </div>
 
