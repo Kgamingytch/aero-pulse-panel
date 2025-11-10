@@ -8,7 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 
 interface Flight {
   id: string;
@@ -47,13 +56,9 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
 
     const channel = supabase
       .channel("flights-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "flights" },
-        () => {
-          fetchFlights();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "flights" }, () => {
+        fetchFlights();
+      })
       .subscribe();
 
     return () => {
@@ -63,10 +68,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
 
   const fetchFlights = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("flights")
-      .select("*")
-      .order("departure_time", { ascending: true });
+    const { data, error } = await supabase.from("flights").select("*").order("departure_time", { ascending: true });
 
     if (error) {
       toast.error("Failed to fetch flights");
@@ -94,7 +96,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
       arrival_time: newArrivalTime,
       status: newStatus,
       gate: newGate.trim() || null,
-      aircraft_type: newAircraftType.trim() || null,
+      aircraft_type: newAircraftType.trim() || null
     });
 
     if (error) {
@@ -123,10 +125,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
   const handleDelete = async () => {
     if (!flightToDelete) return;
 
-    const { error } = await supabase
-      .from("flights")
-      .delete()
-      .eq("id", flightToDelete.id);
+    const { error } = await supabase.from("flights").delete().eq("id", flightToDelete.id);
 
     if (error) {
       toast.error("Failed to delete flight");
@@ -139,18 +138,18 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
     setFlightToDelete(null);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBorder = (status: string) => {
     switch (status) {
       case "boarding":
-        return "default";
+        return "border-l-blue-500";
       case "delayed":
-        return "destructive";
+        return "border-l-red-500";
       case "cancelled":
-        return "destructive";
+        return "border-l-red-600";
       case "departed":
-        return "secondary";
+        return "border-l-green-500";
       default:
-        return "secondary";
+        return "border-l-muted-foreground/40";
     }
   };
 
@@ -173,14 +172,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="flight-number">Flight Number</Label>
-                  <Input
-                    id="flight-number"
-                    value={newFlightNumber}
-                    onChange={(e) => setNewFlightNumber(e.target.value)}
-                    placeholder="AA1234"
-                    disabled={loading}
-                    required
-                  />
+                  <Input id="flight-number" value={newFlightNumber} onChange={(e) => setNewFlightNumber(e.target.value)} placeholder="AA1234" disabled={loading} required />
                 </div>
 
                 <div className="space-y-2">
@@ -203,78 +195,36 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="departure-airport">From (IATA)</Label>
-                  <Input
-                    id="departure-airport"
-                    value={newDepartureAirport}
-                    onChange={(e) => setNewDepartureAirport(e.target.value)}
-                    placeholder="PRG"
-                    maxLength={3}
-                    disabled={loading}
-                    required
-                  />
+                  <Input id="departure-airport" value={newDepartureAirport} onChange={(e) => setNewDepartureAirport(e.target.value)} placeholder="PRG" maxLength={3} disabled={loading} required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="arrival-airport">To (IATA)</Label>
-                  <Input
-                    id="arrival-airport"
-                    value={newArrivalAirport}
-                    onChange={(e) => setNewArrivalAirport(e.target.value)}
-                    placeholder="LHR"
-                    maxLength={3}
-                    disabled={loading}
-                    required
-                  />
+                  <Input id="arrival-airport" value={newArrivalAirport} onChange={(e) => setNewArrivalAirport(e.target.value)} placeholder="LHR" maxLength={3} disabled={loading} required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="departure-time">Departure</Label>
-                  <Input
-                    id="departure-time"
-                    type="datetime-local"
-                    value={newDepartureTime}
-                    onChange={(e) => setNewDepartureTime(e.target.value)}
-                    disabled={loading}
-                    required
-                  />
+                  <Input id="departure-time" type="datetime-local" value={newDepartureTime} onChange={(e) => setNewDepartureTime(e.target.value)} disabled={loading} required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="arrival-time">Arrival</Label>
-                  <Input
-                    id="arrival-time"
-                    type="datetime-local"
-                    value={newArrivalTime}
-                    onChange={(e) => setNewArrivalTime(e.target.value)}
-                    disabled={loading}
-                    required
-                  />
+                  <Input id="arrival-time" type="datetime-local" value={newArrivalTime} onChange={(e) => setNewArrivalTime(e.target.value)} disabled={loading} required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="gate">Gate (Optional)</Label>
-                  <Input
-                    id="gate"
-                    value={newGate}
-                    onChange={(e) => setNewGate(e.target.value)}
-                    placeholder="A12"
-                    disabled={loading}
-                  />
+                  <Input id="gate" value={newGate} onChange={(e) => setNewGate(e.target.value)} placeholder="A12" disabled={loading} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="aircraft">Aircraft (Optional)</Label>
-                  <Input
-                    id="aircraft"
-                    value={newAircraftType}
-                    onChange={(e) => setNewAircraftType(e.target.value)}
-                    placeholder="Boeing 737"
-                    disabled={loading}
-                  />
+                  <Input id="aircraft" value={newAircraftType} onChange={(e) => setNewAircraftType(e.target.value)} placeholder="Boeing 737" disabled={loading} />
                 </div>
               </div>
 
@@ -291,34 +241,41 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
               <p className="text-muted-foreground text-center py-4">No flights yet</p>
             ) : (
               flights.map((flight) => (
-                <div key={flight.id} className="p-4 bg-muted rounded-lg">
-                  <div className="flex items-start justify-between gap-2 mb-2">
+                <div
+                  key={flight.id}
+                  className={`
+                    group p-4 rounded-lg border bg-background transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]
+                    border-l-4 ${getStatusBorder(flight.status)}
+                  `}
+                >
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground">{flight.flight_number}</h3>
-                        <Badge variant={getStatusColor(flight.status)}>{flight.status}</Badge>
+                        <h3 className="font-semibold text-foreground truncate">{flight.flight_number}</h3>
+                        <Badge variant="outline" className="uppercase text-[10px] tracking-wide">
+                          {flight.status}
+                        </Badge>
                       </div>
+
                       <p className="text-sm text-muted-foreground">
                         {flight.departure_airport} → {flight.arrival_airport}
                       </p>
+
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Departs: {new Date(flight.departure_time).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Arrives: {new Date(flight.arrival_time).toLocaleString()}
+                      </p>
+                      {flight.gate && <p className="text-xs text-muted-foreground">Gate: {flight.gate}</p>}
+                      {flight.aircraft_type && <p className="text-xs text-muted-foreground">Aircraft: {flight.aircraft_type}</p>}
                     </div>
+
                     {isAdmin && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => confirmDelete(flight)}
-                        className="shrink-0"
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => confirmDelete(flight)} className="shrink-0 hover:bg-destructive/10">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}
-                  </div>
-
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>Departs: {new Date(flight.departure_time).toLocaleString()}</p>
-                    <p>Arrives: {new Date(flight.arrival_time).toLocaleString()}</p>
-                    {flight.gate && <p>Gate: {flight.gate}</p>}
-                    {flight.aircraft_type && <p>Aircraft: {flight.aircraft_type}</p>}
                   </div>
                 </div>
               ))
@@ -332,7 +289,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Flight</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete flight {flightToDelete?.flight_number}? This action cannot be undone.
+              Are you sure you want to delete flight {flightToDelete?.flight_number}? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
