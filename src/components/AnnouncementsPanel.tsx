@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -17,6 +19,7 @@ interface Announcement {
   content: string;
   priority: string;
   created_at: string;
+  created_by: string | null;
 }
 
 interface AnnouncementsPanelProps {
@@ -29,6 +32,8 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -196,19 +201,39 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Creating..." : "Create Announcement"}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Announcement
+                  </>
+                )}
               </Button>
             </form>
           )}
 
           <div className="space-y-3">
             {loading && announcements.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">Loading...</p>
+              <p className="text-muted-foreground text-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                Loading announcements...
+              </p>
             ) : announcements.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No announcements yet</p>
             ) : (
               announcements.map((announcement) => (
-                <div key={announcement.id} className="p-4 bg-muted rounded-lg space-y-2">
+                <div 
+                  key={announcement.id} 
+                  className="p-4 bg-muted rounded-lg space-y-2 cursor-pointer hover:bg-muted/80 transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+                  onClick={() => {
+                    setSelectedAnnouncement(announcement);
+                    setDetailsOpen(true);
+                  }}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -217,16 +242,22 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                           {announcement.priority}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{announcement.content}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{announcement.content}</p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(announcement.created_at).toLocaleString()}
+                        {new Date(announcement.created_at).toLocaleString('en-US', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })}
                       </p>
                     </div>
                     {isAdmin && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => confirmDelete(announcement)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmDelete(announcement);
+                        }}
                         className="shrink-0"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -239,6 +270,64 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <DialogTitle className="text-3xl font-bold text-foreground pr-8">
+                {selectedAnnouncement?.title}
+              </DialogTitle>
+              <Badge 
+                variant={getPriorityColor(selectedAnnouncement?.priority || "normal")}
+                className="shrink-0"
+              >
+                {selectedAnnouncement?.priority}
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-6">
+            <div className="prose prose-sm max-w-none">
+              <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap">
+                {selectedAnnouncement?.content}
+              </p>
+            </div>
+
+            <Separator />
+
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                Posted On
+              </p>
+              <p className="text-base font-medium text-foreground">
+                {selectedAnnouncement?.created_at 
+                  ? new Date(selectedAnnouncement.created_at).toLocaleString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : 'Unknown'
+                }
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setDetailsOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

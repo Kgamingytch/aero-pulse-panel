@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RefreshCw } from "lucide-react";
+import { UserPlus, Trash2, RefreshCw, Loader2, Edit, Save, X, Users } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { z } from "zod";
 
@@ -42,6 +42,11 @@ export const UserManagementPanel = () => {
   const [newUserIsAdmin, setNewUserIsAdmin] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [successUserId, setSuccessUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -252,6 +257,63 @@ export const UserManagementPanel = () => {
     }
   };
 
+  const startEditing = (user: UserProfile) => {
+    setEditingUserId(user.id);
+    setEditFullName(user.full_name || "");
+    setEditEmail(user.email);
+  };
+
+  const cancelEditing = () => {
+    setEditingUserId(null);
+    setEditFullName("");
+    setEditEmail("");
+  };
+
+  const handleUpdateUser = async (userId: string) => {
+    const nameSchema = z.string().trim().min(1, "Name is required").max(100, "Name too long");
+    const emailSchema = z.string().email("Invalid email").max(255, "Email too long");
+
+    try {
+      nameSchema.parse(editFullName);
+      emailSchema.parse(editEmail);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editFullName.trim(),
+          email: editEmail.trim()
+        })
+        .eq("id", userId);
+
+      if (profileError) throw profileError;
+
+      toast.success("User profile updated successfully");
+      setSuccessUserId(userId);
+      setTimeout(() => setSuccessUserId(null), 2000);
+      
+      setEditingUserId(null);
+      fetchUsers();
+    } catch (error: any) {
+      const errorMessage = error?.message || "Unknown error";
+      if (errorMessage.includes("duplicate")) {
+        toast.error("This email is already in use");
+      } else {
+        toast.error("Failed to update profile");
+      }
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Card className="border-0 shadow-none">
@@ -332,65 +394,182 @@ export const UserManagementPanel = () => {
 
           <div className="space-y-3">
             {loading && users.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">Loading users...</p>
-            ) : users.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No users yet</p>
-            ) : (
-              users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-                >
-                  <div className="flex-1 min-w-0 mr-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-foreground truncate">
-                        {user.full_name || "No name"}
-                      </p>
-                      {user.user_roles.map((r) => (
-                        <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
-                          {r.role}
-                        </Badge>
-                      ))}
-                      {user.id === currentUserId && (
-                        <Badge variant="outline">You</Badge>
-                      )}
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div 
+                    key={i} 
+                    className="p-4 bg-muted rounded-lg animate-pulse"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <div className="space-y-2">
+                      <div className="h-5 bg-muted-foreground/20 rounded w-1/3" />
+                      <div className="h-4 bg-muted-foreground/20 rounded w-1/2" />
+                      <div className="h-3 bg-muted-foreground/20 rounded w-1/4" />
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Joined {new Date(user.created_at).toLocaleDateString()}
-                    </p>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleResetPassword(user.email)}
-                      disabled={loading}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant={user.user_roles.some((r) => r.role === "admin") ? "destructive" : "default"}
-                      onClick={() => confirmToggleRole(user)}
-                      disabled={loading}
-                    >
-                      {user.user_roles.some((r) => r.role === "admin") ? "Remove Admin" : "Make Admin"}
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => confirmDeleteUser(user)}
-                      disabled={loading || user.id === currentUserId}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                ))}
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12 space-y-3">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted">
+                  <Users className="h-8 w-8 text-muted-foreground" />
                 </div>
-              ))
+                <p className="text-lg font-medium text-foreground">No users yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Create your first user to get started
+                </p>
+              </div>
+            ) : (
+              users.map((user, index) => {
+                const isEditing = editingUserId === user.id;
+                const isSuccess = successUserId === user.id;
+                
+                return (
+                  <div
+                    key={user.id}
+                    className={`p-4 bg-muted rounded-lg transition-all duration-200 hover:shadow-md hover:scale-[1.01] animate-fade-in ${
+                      isSuccess ? 'ring-2 ring-green-500/50 bg-green-50 dark:bg-green-950/20' : ''
+                    }`}
+                    style={{ 
+                      animationDelay: `${index * 50}ms`,
+                      animationFillMode: 'backwards'
+                    }}
+                  >
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-name-${user.id}`}>Full Name</Label>
+                          <Input
+                            id={`edit-name-${user.id}`}
+                            value={editFullName}
+                            onChange={(e) => setEditFullName(e.target.value)}
+                            disabled={loading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-email-${user.id}`}>Email</Label>
+                          <Input
+                            id={`edit-email-${user.id}`}
+                            type="email"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            disabled={loading}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Note: Email changes in profiles table only. Auth email requires user confirmation.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-2">
+                          {user.user_roles.map((r) => (
+                            <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
+                              {r.role}
+                            </Badge>
+                          ))}
+                          {user.id === currentUserId && (
+                            <Badge variant="outline">You</Badge>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateUser(user.id)}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-4 w-4 mr-2" />
+                                Save
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={cancelEditing}
+                            disabled={loading}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <p className="font-medium text-foreground">
+                                {user.full_name || "No name"}
+                              </p>
+                              {user.user_roles.map((r) => (
+                                <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
+                                  {r.role}
+                                </Badge>
+                              ))}
+                              {user.id === currentUserId && (
+                                <Badge variant="outline">You</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Joined {new Date(user.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => startEditing(user)}
+                            disabled={loading}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleResetPassword(user.email)}
+                            disabled={loading}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Reset Password
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant={user.user_roles.some((r) => r.role === "admin") ? "destructive" : "default"}
+                            onClick={() => confirmToggleRole(user)}
+                            disabled={loading}
+                          >
+                            {user.user_roles.some((r) => r.role === "admin") ? "Remove Admin" : "Make Admin"}
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => confirmDeleteUser(user)}
+                            disabled={loading || user.id === currentUserId}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </CardContent>
@@ -399,16 +578,35 @@ export const UserManagementPanel = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {userToDelete?.full_name || userToDelete?.email}? 
-              This action cannot be undone and will remove all their data.
+            <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Are you sure you want to delete <strong>{userToDelete?.full_name}</strong> ({userToDelete?.email})?
+              </p>
+              <div className="bg-muted p-3 rounded-md text-sm">
+                <p className="font-semibold mb-2">This will permanently remove:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>User profile and account data</li>
+                  <li>All assigned roles and permissions</li>
+                  <li>Access to the FlyPrague system</li>
+                </ul>
+              </div>
+              <p className="font-semibold text-destructive">
+                This action cannot be undone.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete User"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

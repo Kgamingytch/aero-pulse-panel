@@ -3,12 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { Bell, Calendar, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { AnnouncementsPanel } from "@/components/AnnouncementsPanel";
 import { FlightsPanel } from "@/components/FlightsPanel";
 import { UserManagementPanel } from "@/components/UserManagementPanel";
-
-import BackgroundImage from "/Background.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,9 +14,7 @@ const Dashboard = () => {
   const [fullName, setFullName] = useState("User");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Toggleable User Management
-  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     let subscription: any;
@@ -60,8 +56,9 @@ const Dashboard = () => {
         const adminFlag = roles?.some(r => r.role === "admin") ?? false;
         setIsAdmin(adminFlag);
 
-        // Show User Management only for admin by default
-        if (adminFlag) setShowUserManagement(true);
+        // Show welcome animation
+        setShowWelcome(true);
+        setTimeout(() => setShowWelcome(false), 2500);
 
       } catch (err: any) {
         console.error("Unable to fetch profile or roles:", err.message || err);
@@ -92,36 +89,9 @@ const Dashboard = () => {
     }
   };
 
-  const createFlight = async (title: string, content: string, priority: number) => {
-    if (!session?.user) return;
-    const { error } = await supabase.from("flights").insert([{
-      title, content, priority,
-      created_by: session.user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }]);
-    if (error) toast.error("Failed to create flight");
-    else toast.success("Flight created successfully");
-  };
-
-  const createAnnouncement = async (title: string, content: string, priority: number) => {
-    if (!session?.user) return;
-    const { error } = await supabase.from("announcements").insert([{
-      title, content, priority,
-      created_by: session.user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }]);
-    if (error) toast.error("Failed to create announcement");
-    else toast.success("Announcement created successfully");
-  };
-
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundImage: `url(${BackgroundImage})`, backgroundSize: "cover", backgroundPosition: "center" }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-foreground text-xl animate-pulse">Loading...</p>
       </div>
     );
@@ -130,60 +100,61 @@ const Dashboard = () => {
   if (!session) return null;
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: `url(${BackgroundImage})` }}
-    >
+    <div className="min-h-screen bg-background">
+      {/* Welcome Animation */}
+      {showWelcome && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm animate-fade-in">
+          <div className="text-center space-y-4 animate-scale-in">
+            <h1 className="text-5xl font-bold text-primary">
+              Welcome back, {fullName}
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              FlyPrague Operations Dashboard
+            </p>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span>Loading your workspace...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="shadow sticky top-0 z-10 bg-card border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">
-            Welcome, {fullName}
+          <h1 className="text-2xl font-bold text-foreground">
+            FlyPrague Operations Dashboard
           </h1>
-          <button
-            onClick={handleLogout}
-            className="flex items-center px-3 py-1 border rounded bg-red-600 text-white border-red-600"
-          >
-            <LogOut className="h-4 w-4 mr-2 text-white" />
-            Logout
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground hidden sm:block">
+              {fullName}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
       {/* MAIN */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Status cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
-            <Bell className="h-6 w-6 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">Active</p>
-              <p className="text-xl font-bold text-foreground">Announcements</p>
-            </div>
-          </div>
-
-          <div className="bg-card rounded-lg shadow-sm border p-6 flex items-center gap-4">
-            <Calendar className="h-6 w-6 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">Scheduled</p>
-              <p className="text-xl font-bold text-foreground">Flights</p>
-            </div>
-          </div>
-        </div>
-
         {/* Panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-card rounded-lg shadow-sm border p-6">
-            <AnnouncementsPanel isAdmin={isAdmin} onCreate={createAnnouncement} />
+            <AnnouncementsPanel isAdmin={isAdmin} />
           </div>
           <div className="bg-card rounded-lg shadow-sm border p-6">
-            <FlightsPanel isAdmin={isAdmin} onCreate={createFlight} />
+            <FlightsPanel isAdmin={isAdmin} />
           </div>
         </div>
 
-        {/* Toggleable User Management Panel */}
-        {showUserManagement && (
-          <div className="mt-8 bg-card rounded-lg shadow-sm border p-6">
+        {/* User Management Panel */}
+        {isAdmin && (
+          <div className="bg-card rounded-lg shadow-sm border p-6">
             <UserManagementPanel />
           </div>
         )}
