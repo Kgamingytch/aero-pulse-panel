@@ -109,11 +109,11 @@ const Dashboard = () => {
               Welcome back, {fullName}
             </h1>
             <p className="text-lg text-muted-foreground">
-              FlyPrague Operations Dashboard
+              Dashboard
             </p>
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span>Loading your workspace...</span>
+              <span>Loading your dashboard...</span>
             </div>
           </div>
         </div>
@@ -123,7 +123,7 @@ const Dashboard = () => {
       <header className="shadow sticky top-0 z-10 bg-card border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">
-            FlyPrague Operations Dashboard
+          Dashboard
           </h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden sm:block">
@@ -134,7 +134,7 @@ const Dashboard = () => {
               className="flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              Log out
             </button>
           </div>
         </div>
