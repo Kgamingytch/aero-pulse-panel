@@ -48,35 +48,46 @@ export const UserManagementPanel = () => {
   const [editEmail, setEditEmail] = useState("");
   const [successUserId, setSuccessUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-    getCurrentUser();
-  }, []);
-
+  // ---------- Helpers (hoisted so useEffect can call them) ----------
   const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUserId(user?.id || null);
+    try {
+      const res = await supabase.auth.getUser();
+      // supabase-js v2: { data, error }
+      const user = (res as any)?.data?.user ?? null;
+      setCurrentUserId(user?.id || null);
+    } catch (err) {
+      console.error("getCurrentUser error:", err);
+      setCurrentUserId(null);
+    }
   };
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select(`
-        *,
-        user_roles (
-          role
-        )
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          user_roles (
+            role
+          )
+        `)
+        .order("created_at", { ascending: false });
 
-    if (error) {
+      if (error) {
+        toast.error("Failed to fetch users");
+        console.error(error);
+        setUsers([]);
+      } else {
+        setUsers((profiles as any) || []);
+      }
+    } catch (err) {
+      console.error("fetchUsers error:", err);
       toast.error("Failed to fetch users");
-      console.error(error);
-    } else {
-      setUsers((profiles as any) || []);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const validateForm = () => {
@@ -102,6 +113,26 @@ export const UserManagementPanel = () => {
     }
   };
 
+  // ---------- Lifecycle ----------
+  useEffect(() => {
+    fetchUsers();
+    getCurrentUser();
+
+    // Subscribe to profile changes to update UI in real-time if supported.
+    const channel = supabase
+      .channel("profiles-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---------- Actions ----------
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -112,7 +143,7 @@ export const UserManagementPanel = () => {
 
     setLoading(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: newUserEmail,
         password: newUserPassword,
         options: {
@@ -121,15 +152,18 @@ export const UserManagementPanel = () => {
         }
       });
 
-      if (authError) {
-        toast.error(authError.message);
+      if (error) {
+        toast.error(error.message);
+        console.error(error);
         return;
       }
 
-      if (authData.user && newUserIsAdmin) {
+      const createdUser = (data as any)?.user ?? null;
+
+      if (createdUser && newUserIsAdmin) {
         const { error: roleError } = await supabase
           .from("user_roles")
-          .insert({ user_id: authData.user.id, role: "admin" });
+          .insert({ user_id: createdUser.id, role: "admin" });
 
         if (roleError) {
           toast.error("User created but failed to assign admin role");
@@ -161,7 +195,7 @@ export const UserManagementPanel = () => {
   const toggleUserRole = async () => {
     if (!roleChangeUser) return;
 
-    const isCurrentlyAdmin = roleChangeUser.user_roles.some((r) => r.role === "admin");
+    const isCurrentlyAdmin = Array.isArray(roleChangeUser.user_roles) && roleChangeUser.user_roles.some((r) => r.role === "admin");
 
     if (roleChangeUser.id === currentUserId && isCurrentlyAdmin) {
       toast.error("You cannot remove your own admin role");
@@ -190,7 +224,7 @@ export const UserManagementPanel = () => {
         toast.success("Admin role granted");
       }
 
-      fetchUsers();
+      await fetchUsers();
     } catch (error) {
       toast.error("Failed to update role");
       console.error(error);
@@ -232,7 +266,7 @@ export const UserManagementPanel = () => {
       if (profileError) throw profileError;
 
       toast.success("User deleted successfully");
-      fetchUsers();
+      await fetchUsers();
     } catch (error) {
       toast.error("Failed to delete user");
       console.error(error);
@@ -300,10 +334,10 @@ export const UserManagementPanel = () => {
       setTimeout(() => setSuccessUserId(null), 2000);
       
       setEditingUserId(null);
-      fetchUsers();
+      await fetchUsers();
     } catch (error: any) {
       const errorMessage = error?.message || "Unknown error";
-      if (errorMessage.includes("duplicate")) {
+      if (typeof errorMessage === "string" && errorMessage.toLowerCase().includes("duplicate")) {
         toast.error("This email is already in use");
       } else {
         toast.error("Failed to update profile");
@@ -314,6 +348,7 @@ export const UserManagementPanel = () => {
     }
   };
 
+  // ---------- Render ----------
   return (
     <>
       <Card className="border-0 shadow-none">
@@ -427,7 +462,7 @@ export const UserManagementPanel = () => {
                 return (
                   <div
                     key={user.id}
-                    className={`p-4 bg-muted rounded-lg transition-all duration-200 hover:shadow-md hover:scale-[1.01] animate-fade-in ${
+                    className={`p-4 bg-muted rounded-lg transition-all duration-200 hover:shadow-md hover:scale-[1.01] ${
                       isSuccess ? 'ring-2 ring-green-500/50 bg-green-50 dark:bg-green-950/20' : ''
                     }`}
                     style={{ 
@@ -460,7 +495,7 @@ export const UserManagementPanel = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-2 pt-2">
-                          {user.user_roles.map((r) => (
+                          {Array.isArray(user.user_roles) && user.user_roles.map((r) => (
                             <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
                               {r.role}
                             </Badge>
@@ -506,7 +541,7 @@ export const UserManagementPanel = () => {
                               <p className="font-medium text-foreground">
                                 {user.full_name || "No name"}
                               </p>
-                              {user.user_roles.map((r) => (
+                              {Array.isArray(user.user_roles) && user.user_roles.map((r) => (
                                 <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
                                   {r.role}
                                 </Badge>
@@ -549,11 +584,11 @@ export const UserManagementPanel = () => {
 
                           <Button
                             size="sm"
-                            variant={user.user_roles.some((r) => r.role === "admin") ? "destructive" : "default"}
+                            variant={Array.isArray(user.user_roles) && user.user_roles.some((r) => r.role === "admin") ? "destructive" : "default"}
                             onClick={() => confirmToggleRole(user)}
                             disabled={loading}
                           >
-                            {user.user_roles.some((r) => r.role === "admin") ? "Remove Admin" : "Make Admin"}
+                            {Array.isArray(user.user_roles) && user.user_roles.some((r) => r.role === "admin") ? "Remove Admin" : "Make Admin"}
                           </Button>
 
                           <Button
@@ -617,7 +652,7 @@ export const UserManagementPanel = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Change User Role</AlertDialogTitle>
             <AlertDialogDescription>
-              {roleChangeUser?.user_roles.some((r) => r.role === "admin")
+              {Array.isArray(roleChangeUser?.user_roles) && roleChangeUser?.user_roles.some((r) => r.role === "admin")
                 ? `Remove admin privileges from ${roleChangeUser?.full_name || roleChangeUser?.email}?`
                 : `Grant admin privileges to ${roleChangeUser?.full_name || roleChangeUser?.email}?`}
             </AlertDialogDescription>
