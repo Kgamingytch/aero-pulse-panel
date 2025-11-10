@@ -44,13 +44,9 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
 
     const channel = supabase
       .channel("announcements-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "announcements" },
-        () => {
-          fetchAnnouncements();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "announcements" }, () => {
+        fetchAnnouncements();
+      })
       .subscribe();
 
     return () => {
@@ -216,6 +212,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
             </form>
           )}
 
+          {/* UPDATED ANNOUNCEMENT LIST UI */}
           <div className="space-y-3">
             {loading && announcements.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">
@@ -226,9 +223,19 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
               <p className="text-muted-foreground text-center py-4">No announcements yet</p>
             ) : (
               announcements.map((announcement) => (
-                <div 
-                  key={announcement.id} 
-                  className="p-4 bg-muted rounded-lg space-y-2 cursor-pointer hover:bg-muted/80 transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+                <div
+                  key={announcement.id}
+                  className={`
+                    group p-4 rounded-lg border cursor-pointer transition-all duration-200 bg-background
+                    hover:shadow-md hover:-translate-y-[1px] flex flex-col gap-2
+                    ${
+                      announcement.priority === "high"
+                        ? "border-l-4 border-l-red-500"
+                        : announcement.priority === "normal"
+                        ? "border-l-4 border-l-blue-500"
+                        : "border-l-4 border-l-muted-foreground/40"
+                    }
+                  `}
                   onClick={() => {
                     setSelectedAnnouncement(announcement);
                     setDetailsOpen(true);
@@ -237,19 +244,30 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground truncate">{announcement.title}</h3>
-                        <Badge variant={getPriorityColor(announcement.priority)}>
+                        <h3 className="font-semibold text-foreground truncate">
+                          {announcement.title}
+                        </h3>
+
+                        <Badge
+                          variant={getPriorityColor(announcement.priority)}
+                          className="uppercase text-[10px] tracking-wide"
+                        >
                           {announcement.priority}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{announcement.content}</p>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {announcement.content}
+                      </p>
+
                       <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(announcement.created_at).toLocaleString('en-US', {
-                          dateStyle: 'medium',
-                          timeStyle: 'short'
+                        {new Date(announcement.created_at).toLocaleString("en-US", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
                         })}
                       </p>
                     </div>
+
                     {isAdmin && (
                       <Button
                         size="sm"
@@ -258,7 +276,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                           e.stopPropagation();
                           confirmDelete(announcement);
                         }}
-                        className="shrink-0"
+                        className="shrink-0 hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -272,29 +290,19 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
       </Card>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-height-[85vh] overflow-y-auto">
           <DialogHeader className="space-y-3">
-            <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-3xl font-bold text-foreground pr-8">
-                {selectedAnnouncement?.title}
-              </DialogTitle>
-              <Badge 
-                variant={getPriorityColor(selectedAnnouncement?.priority || "normal")}
-                className="shrink-0"
-              >
-                {selectedAnnouncement?.priority}
-              </Badge>
-            </div>
+            <DialogTitle className="text-3xl font-bold text-foreground">
+              {selectedAnnouncement?.title}
+            </DialogTitle>
           </DialogHeader>
 
           <Separator className="my-4" />
 
           <div className="space-y-6">
-            <div className="prose prose-sm max-w-none">
-              <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap">
-                {selectedAnnouncement?.content}
-              </p>
-            </div>
+            <p className="text-base text-foreground whitespace-pre-wrap leading-relaxed">
+              {selectedAnnouncement?.content}
+            </p>
 
             <Separator />
 
@@ -303,26 +311,22 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                 Posted On
               </p>
               <p className="text-base font-medium text-foreground">
-                {selectedAnnouncement?.created_at 
-                  ? new Date(selectedAnnouncement.created_at).toLocaleString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                {selectedAnnouncement?.created_at
+                  ? new Date(selectedAnnouncement.created_at).toLocaleString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })
-                  : 'Unknown'
-                }
+                  : "Unknown"}
               </p>
             </div>
           </div>
 
           <DialogFooter className="mt-6">
-            <Button 
-              variant="outline" 
-              onClick={() => setDetailsOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setDetailsOpen(false)}>
               Close
             </Button>
           </DialogFooter>
@@ -339,7 +343,10 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
