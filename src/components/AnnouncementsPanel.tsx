@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { SuccessCheckmark } from "@/components/ui/success-checkmark";
+import { cn } from "@/lib/utils";
 
 interface Announcement {
   id: string;
@@ -34,6 +36,8 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [successCheckmark, setSuccessCheckmark] = useState(false);
+  const [recentlyCreatedId, setRecentlyCreatedId] = useState<string | null>(null);
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -61,7 +65,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error("Failed to load announcements");
+      toast.error("⚠ Failed to load announcements");
       return;
     }
 
@@ -72,32 +76,41 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
     e.preventDefault();
 
     if (!newTitle.trim() || !newContent.trim()) {
-      toast.error("Title and content are required");
+      toast.error("⚠ Title and content are required");
       return;
     }
 
     if (newTitle.length > 200) {
-      toast.error("Title must be less than 200 characters");
+      toast.error("⚠ Title must be less than 200 characters");
       return;
     }
 
     if (newContent.length > 2000) {
-      toast.error("Content must be less than 2000 characters");
+      toast.error("⚠ Content must be less than 2000 characters");
       return;
     }
 
     setLoading(true);
-    const { error } = await supabase.from("announcements").insert({
+    const { data, error } = await supabase.from("announcements").insert({
       title: newTitle.trim(),
       content: newContent.trim(),
       priority: newPriority,
-    });
+    }).select().single();
 
     if (error) {
-      toast.error("Failed to create announcement");
+      toast.error("⚠ Failed to create announcement");
       console.error(error);
     } else {
-      toast.success("Announcement created!");
+      toast.success("✓ Announcement created!");
+      
+      // Show success animations
+      setRecentlyCreatedId(data.id);
+      setSuccessCheckmark(true);
+      setTimeout(() => {
+        setSuccessCheckmark(false);
+        setRecentlyCreatedId(null);
+      }, 2000);
+      
       setNewTitle("");
       setNewContent("");
       setNewPriority("normal");
@@ -120,10 +133,10 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
       .eq("id", announcementToDelete.id);
 
     if (error) {
-      toast.error("Failed to delete announcement");
+      toast.error("⚠ Failed to delete announcement");
       console.error(error);
     } else {
-      toast.success("Announcement deleted");
+      toast.success("✓ Announcement deleted");
     }
 
     setDeleteDialogOpen(false);
@@ -143,6 +156,8 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
 
   return (
     <>
+      <SuccessCheckmark show={successCheckmark} />
+      
       <Card className="border-0 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
           <CardTitle className="text-foreground">Announcements</CardTitle>
@@ -156,7 +171,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
 
         <CardContent className="px-0 pb-0">
           {isAdmin && showForm && (
-            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 bg-muted rounded-lg">
+            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 bg-muted rounded-lg animate-scale-in">
               <div className="space-y-2">
                 <Label htmlFor="title">Title ({newTitle.length}/200)</Label>
                 <Input
@@ -212,33 +227,45 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
             </form>
           )}
 
-          {/* UPDATED ANNOUNCEMENT LIST UI */}
           <div className="space-y-3">
             {loading && announcements.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
-                Loading announcements...
-              </p>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div 
+                    key={i} 
+                    className="p-4 bg-muted rounded-lg animate-pulse-subtle"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <div className="space-y-2">
+                      <div className="h-5 bg-muted-foreground/20 rounded w-2/3" />
+                      <div className="h-4 bg-muted-foreground/20 rounded w-1/2" />
+                      <div className="h-3 bg-muted-foreground/20 rounded w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : announcements.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No announcements yet</p>
+              <p className="text-center text-muted-foreground py-8">No announcements yet</p>
             ) : (
-              announcements.map((announcement) => (
+              announcements.map((announcement, index) => (
                 <div
                   key={announcement.id}
-                  className={`
-                    group p-4 rounded-lg border cursor-pointer transition-all duration-200 bg-background
-                    hover:shadow-md hover:-translate-y-[1px] flex flex-col gap-2
-                    ${
-                      announcement.priority === "high"
-                        ? "border-l-4 border-l-red-500"
-                        : announcement.priority === "normal"
-                        ? "border-l-4 border-l-blue-500"
-                        : "border-l-4 border-l-muted-foreground/40"
-                    }
-                  `}
                   onClick={() => {
                     setSelectedAnnouncement(announcement);
                     setDetailsOpen(true);
+                  }}
+                  className={cn(
+                    "p-4 bg-muted rounded-lg space-y-2 cursor-pointer",
+                    "transition-all duration-200",
+                    "hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md",
+                    "active:scale-[0.98]",
+                    "animate-fade-in",
+                    recentlyCreatedId === announcement.id && 
+                      "animate-success-flash ring-2 ring-green-500/50 bg-green-50"
+                  )}
+                  style={{ 
+                    animationDelay: `${index * 50}ms`,
+                    animationFillMode: 'backwards'
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -290,7 +317,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
       </Card>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-3xl max-height-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-height-[85vh] overflow-y-auto animate-scale-in">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-3xl font-bold text-foreground">
               {selectedAnnouncement?.title}
@@ -334,9 +361,12 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
       </Dialog>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="animate-scale-in">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Announcement</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Delete Announcement
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete "{announcementToDelete?.title}"? This action cannot be undone.
             </AlertDialogDescription>

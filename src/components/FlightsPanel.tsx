@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -18,6 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
+import { SuccessCheckmark } from "@/components/ui/success-checkmark";
+import { cn } from "@/lib/utils";
 
 interface Flight {
   id: string;
@@ -41,6 +43,8 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [flightToDelete, setFlightToDelete] = useState<Flight | null>(null);
+  const [successCheckmark, setSuccessCheckmark] = useState(false);
+  const [recentlyCreatedId, setRecentlyCreatedId] = useState<string | null>(null);
 
   const [newFlightNumber, setNewFlightNumber] = useState("");
   const [newDepartureAirport, setNewDepartureAirport] = useState("");
@@ -71,7 +75,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
     const { data, error } = await supabase.from("flights").select("*").order("departure_time", { ascending: true });
 
     if (error) {
-      toast.error("Failed to fetch flights");
+      toast.error("⚠ Failed to fetch flights");
       console.error(error);
     } else {
       setFlights(data || []);
@@ -83,12 +87,12 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
     e.preventDefault();
 
     if (new Date(newArrivalTime) <= new Date(newDepartureTime)) {
-      toast.error("Arrival time must be after departure time");
+      toast.error("⚠ Arrival time must be after departure time");
       return;
     }
 
     setLoading(true);
-    const { error } = await supabase.from("flights").insert({
+    const { data, error } = await supabase.from("flights").insert({
       flight_number: newFlightNumber.trim().toUpperCase(),
       departure_airport: newDepartureAirport.trim().toUpperCase(),
       arrival_airport: newArrivalAirport.trim().toUpperCase(),
@@ -97,13 +101,22 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
       status: newStatus,
       gate: newGate.trim() || null,
       aircraft_type: newAircraftType.trim() || null
-    });
+    }).select().single();
 
     if (error) {
-      toast.error("Failed to create flight");
+      toast.error("⚠ Failed to create flight");
       console.error(error);
     } else {
-      toast.success("Flight created!");
+      toast.success("✓ Flight created successfully!");
+      
+      // Success animations
+      setRecentlyCreatedId(data.id);
+      setSuccessCheckmark(true);
+      setTimeout(() => {
+        setSuccessCheckmark(false);
+        setRecentlyCreatedId(null);
+      }, 2000);
+      
       setNewFlightNumber("");
       setNewDepartureAirport("");
       setNewArrivalAirport("");
@@ -128,10 +141,10 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
     const { error } = await supabase.from("flights").delete().eq("id", flightToDelete.id);
 
     if (error) {
-      toast.error("Failed to delete flight");
+      toast.error("⚠ Failed to delete flight");
       console.error(error);
     } else {
-      toast.success("Flight deleted");
+      toast.success("✓ Flight deleted");
     }
 
     setDeleteDialogOpen(false);
@@ -155,6 +168,8 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
 
   return (
     <>
+      <SuccessCheckmark show={successCheckmark} />
+      
       <Card className="border-0 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
           <CardTitle className="text-foreground">Flights</CardTitle>
@@ -168,7 +183,7 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
 
         <CardContent className="px-0 pb-0">
           {isAdmin && showForm && (
-            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 bg-muted rounded-lg">
+            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 bg-muted rounded-lg animate-scale-in">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="flight-number">Flight Number</Label>
@@ -229,24 +244,54 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Creating..." : "Create Flight"}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating flight...
+                  </>
+                ) : (
+                  "Create Flight"
+                )}
               </Button>
             </form>
           )}
 
           <div className="space-y-3">
             {loading && flights.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">Loading...</p>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div 
+                    key={i} 
+                    className="p-4 bg-muted rounded-lg animate-pulse-subtle"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <div className="space-y-2">
+                      <div className="h-5 bg-muted-foreground/20 rounded w-2/3" />
+                      <div className="h-4 bg-muted-foreground/20 rounded w-1/2" />
+                      <div className="h-3 bg-muted-foreground/20 rounded w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : flights.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No flights yet</p>
+              <p className="text-muted-foreground text-center py-8">No flights yet</p>
             ) : (
-              flights.map((flight) => (
+              flights.map((flight, index) => (
                 <div
                   key={flight.id}
-                  className={`
-                    group p-4 rounded-lg border bg-background transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]
-                    border-l-4 ${getStatusBorder(flight.status)}
-                  `}
+                  className={cn(
+                    "group p-4 rounded-lg border bg-background",
+                    "transition-all duration-200",
+                    "hover:shadow-md hover:-translate-y-[1px]",
+                    "animate-fade-in",
+                    `border-l-4 ${getStatusBorder(flight.status)}`,
+                    recentlyCreatedId === flight.id && 
+                      "animate-success-flash ring-2 ring-green-500/50"
+                  )}
+                  style={{ 
+                    animationDelay: `${index * 50}ms`,
+                    animationFillMode: 'backwards'
+                  }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -285,9 +330,12 @@ export const FlightsPanel = ({ isAdmin }: FlightsPanelProps) => {
       </Card>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="animate-scale-in">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Flight</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Delete Flight
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete flight {flightToDelete?.flight_number}? This cannot be undone.
             </AlertDialogDescription>

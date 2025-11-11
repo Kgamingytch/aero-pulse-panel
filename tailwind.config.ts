@@ -88,10 +88,64 @@ export default {
             height: "0",
           },
         },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" }
+        },
+        "fade-out": {
+          "0%": { opacity: "1", transform: "translateY(0)" },
+          "100%": { opacity: "0", transform: "translateY(10px)" }
+        },
+        "scale-in": {
+          "0%": { transform: "scale(0.9)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" }
+        },
+        "scale-pop": {
+          "0%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.05)" },
+          "100%": { transform: "scale(1)" }
+        },
+        "checkmark": {
+          "0%": { transform: "scale(0) rotate(-45deg)", opacity: "0" },
+          "50%": { transform: "scale(1.2) rotate(-45deg)", opacity: "1" },
+          "100%": { transform: "scale(1) rotate(-45deg)", opacity: "1" }
+        },
+        "success-flash": {
+          "0%": { backgroundColor: "hsl(var(--background))" },
+          "50%": { backgroundColor: "hsl(142 76% 95%)" },
+          "100%": { backgroundColor: "hsl(var(--background))" }
+        },
+        "success-ring": {
+          "0%": { boxShadow: "0 0 0 0 hsl(142 76% 60% / 0.7)" },
+          "50%": { boxShadow: "0 0 0 6px hsl(142 76% 60% / 0)" },
+          "100%": { boxShadow: "0 0 0 0 hsl(142 76% 60% / 0)" }
+        },
+        "bounce-subtle": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-4px)" }
+        },
+        "spin": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" }
+        },
+        "pulse-subtle": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.7" }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "fade-out": "fade-out 0.3s ease-out",
+        "scale-in": "scale-in 0.2s ease-out",
+        "scale-pop": "scale-pop 0.3s ease-out",
+        "checkmark": "checkmark 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        "success-flash": "success-flash 0.6s ease-out",
+        "success-ring": "success-ring 0.6s ease-out",
+        "bounce-subtle": "bounce-subtle 0.5s ease-out",
+        "spin": "spin 1s linear infinite",
+        "pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
       },
     },
   },

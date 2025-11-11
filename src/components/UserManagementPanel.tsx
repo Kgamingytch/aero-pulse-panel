@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { UserPlus, Trash2, RefreshCw, Loader2, Edit, Save, X, Users } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { z } from "zod";
+import { SuccessCheckmark } from "@/components/ui/success-checkmark";
+import { cn } from "@/lib/utils";
 
 const userSchema = z.object({
   email: z.string().email("Invalid email format").max(255, "Email too long"),
@@ -35,6 +37,7 @@ export const UserManagementPanel = () => {
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [roleChangeDialog, setRoleChangeDialog] = useState(false);
   const [roleChangeUser, setRoleChangeUser] = useState<UserProfile | null>(null);
+  const [successCheckmark, setSuccessCheckmark] = useState(false);
 
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
@@ -178,7 +181,12 @@ export const UserManagementPanel = () => {
         }
       }
 
-      toast.success("User created successfully!");
+      toast.success("✓ User created successfully!");
+      
+      // Show success animations
+      setSuccessCheckmark(true);
+      setTimeout(() => setSuccessCheckmark(false), 1500);
+      
       setNewUserEmail("");
       setNewUserPassword("");
       setNewUserFullName("");
@@ -221,14 +229,22 @@ export const UserManagementPanel = () => {
           .eq("role", "admin");
 
         if (error) throw error;
-        toast.success("Admin role removed");
+        toast.success("✓ Admin role removed");
+        
+        // Show success animation
+        setSuccessUserId(roleChangeUser.id);
+        setTimeout(() => setSuccessUserId(null), 2000);
       } else {
         const { error } = await supabase
           .from("user_roles")
           .insert({ user_id: roleChangeUser.id, role: "admin" });
 
         if (error) throw error;
-        toast.success("Admin role granted");
+        toast.success("✓ Admin role granted");
+        
+        // Show success animation
+        setSuccessUserId(roleChangeUser.id);
+        setTimeout(() => setSuccessUserId(null), 2000);
       }
 
       await fetchUsers();
@@ -272,7 +288,7 @@ export const UserManagementPanel = () => {
 
       if (profileError) throw profileError;
 
-      toast.success("User deleted successfully");
+      toast.success("✓ User deleted successfully");
       await fetchUsers();
     } catch (error) {
       toast.error("Failed to delete user");
@@ -291,7 +307,7 @@ export const UserManagementPanel = () => {
       });
 
       if (error) throw error;
-      toast.success(`Password reset email sent to ${email}`);
+      toast.success("✓ Password reset email sent to " + email);
     } catch (error) {
       toast.error("Failed to send reset email");
       console.error(error);
@@ -336,7 +352,7 @@ export const UserManagementPanel = () => {
 
       if (profileError) throw profileError;
 
-      toast.success("User profile updated successfully");
+      toast.success("✓ User profile updated successfully");
       setSuccessUserId(userId);
       setTimeout(() => setSuccessUserId(null), 2000);
       
@@ -358,6 +374,8 @@ export const UserManagementPanel = () => {
   // ---------- Render ----------
   return (
     <>
+      <SuccessCheckmark show={successCheckmark} />
+      
       <Card className="border-0 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
           <CardTitle className="text-foreground">User Management</CardTitle>
@@ -369,7 +387,7 @@ export const UserManagementPanel = () => {
 
         <CardContent className="px-0 pb-0">
           {showForm && (
-            <form onSubmit={handleCreateUser} className="space-y-4 mb-6 p-4 bg-muted rounded-lg">
+            <form onSubmit={handleCreateUser} className="space-y-4 mb-6 p-4 bg-muted rounded-lg animate-scale-in">
               <div className="space-y-2">
                 <Label htmlFor="full-name">Full Name</Label>
                 <Input
@@ -429,7 +447,14 @@ export const UserManagementPanel = () => {
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Creating..." : "Create User"}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create User"
+                )}
               </Button>
             </form>
           )}
@@ -440,7 +465,7 @@ export const UserManagementPanel = () => {
                 {[1, 2, 3, 4].map((i) => (
                   <div 
                     key={i} 
-                    className="p-4 bg-muted rounded-lg animate-pulse"
+                    className="p-4 bg-muted rounded-lg animate-pulse-subtle"
                     style={{ animationDelay: `${i * 100}ms` }}
                   >
                     <div className="space-y-2">
@@ -469,9 +494,12 @@ export const UserManagementPanel = () => {
                 return (
                   <div
                     key={user.id}
-                    className={`p-4 bg-muted rounded-lg transition-all duration-200 hover:shadow-md hover:scale-[1.01] ${
-                      isSuccess ? 'ring-2 ring-green-500/50 bg-green-50 dark:bg-green-950/20' : ''
-                    }`}
+                    className={cn(
+                      "p-4 bg-muted rounded-lg transition-all duration-200",
+                      "hover:shadow-md hover:scale-[1.01]",
+                      "animate-fade-in",
+                      isSuccess && "animate-success-flash ring-2 ring-green-500/50"
+                    )}
                     style={{ 
                       animationDelay: `${index * 50}ms`,
                       animationFillMode: 'backwards'
