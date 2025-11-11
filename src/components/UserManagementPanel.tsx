@@ -64,24 +64,31 @@ export const UserManagementPanel = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data: profiles, error } = await supabase
+      // Fetch profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          user_roles (
-            role
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        toast.error("Failed to fetch users");
-        console.error(error);
-        setUsers([]);
-      } else {
-        setUsers((profiles as any) || []);
-      }
-    } catch (err) {
+      if (profilesError) throw profilesError;
+
+      // Fetch all user roles
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) throw rolesError;
+
+      // Combine profiles with their roles
+      const usersWithRoles = (profiles || []).map(profile => ({
+        ...profile,
+        user_roles: (roles || [])
+          .filter(role => role.user_id === profile.id)
+          .map(role => ({ role: role.role }))
+      }));
+
+      setUsers(usersWithRoles);
+    } catch (err: any) {
       console.error("fetchUsers error:", err);
       toast.error("Failed to fetch users");
       setUsers([]);
