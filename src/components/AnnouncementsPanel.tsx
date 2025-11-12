@@ -164,7 +164,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
           {isAdmin && (
             <Button onClick={() => setShowForm(!showForm)} size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              {showForm ? "Cancel" : "New"}
+              {showForm ? "Cancel Announcement" : "New Announcement"}
             </Button>
           )}
         </CardHeader>
@@ -204,9 +204,9 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="low">Low Priority</SelectItem>
+                    <SelectItem value="normal">Normal Priority</SelectItem>
+                    <SelectItem value="high">High Priority</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -220,7 +220,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                 ) : (
                   <>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Announcement
+                    Create An Announcement
                   </>
                 )}
               </Button>
@@ -289,7 +289,7 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                         </Badge>
                         
                         {announcement.priority === "high" && (
-                          <Maximize2 className="h-3 w-3 text-red-600 animate-bounce-subtle" />
+                          <Maximize2 className="h-3 w-3 text-red-600" />
                         )}
                       </div>
 
