@@ -131,6 +131,14 @@ export default {
         "pulse-subtle": {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" }
+        },
+        "glow-pulse": {
+          "0%, 100%": { 
+            boxShadow: "0 0 20px hsl(0 84% 60% / 0.5), 0 0 40px hsl(0 84% 60% / 0.3), inset 0 0 20px hsl(0 84% 60% / 0.2)" 
+          },
+          "50%": { 
+            boxShadow: "0 0 30px hsl(0 84% 60% / 0.8), 0 0 60px hsl(0 84% 60% / 0.5), inset 0 0 30px hsl(0 84% 60% / 0.3)" 
+          }
         }
       },
       animation: {
@@ -146,6 +154,7 @@ export default {
         "bounce-subtle": "bounce-subtle 0.5s ease-out",
         "spin": "spin 1s linear infinite",
         "pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
       },
     },
   },

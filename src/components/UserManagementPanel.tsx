@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RefreshCw, Loader2, Edit, Save, X, Users } from "lucide-react";
+import { UserPlus, Trash2, RefreshCw, Loader2, Edit, Save, X, Users, KeyRound } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { z } from "zod";
 import { SuccessCheckmark } from "@/components/ui/success-checkmark";
@@ -49,6 +49,8 @@ export const UserManagementPanel = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editFullName, setEditFullName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [successUserId, setSuccessUserId] = useState<string | null>(null);
 
   // ---------- Helpers (hoisted so useEffect can call them) ----------
@@ -128,16 +130,25 @@ export const UserManagementPanel = () => {
     fetchUsers();
     getCurrentUser();
 
-    // Subscribe to profile changes to update UI in real-time if supported.
-    const channel = supabase
+    // Subscribe to profiles changes
+    const profilesChannel = supabase
       .channel("profiles-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
         fetchUsers();
       })
       .subscribe();
 
+    // Subscribe to user_roles changes
+    const rolesChannel = supabase
+      .channel("user-roles-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(rolesChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -147,55 +158,50 @@ export const UserManagementPanel = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the validation errors");
+      toast.error("⚠ Please fix the validation errors");
       return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: newUserEmail,
-        password: newUserPassword,
-        options: {
-          data: { full_name: newUserFullName },
-          emailRedirectTo: `${window.location.origin}/`
-        }
+      const { data, error } = await supabase.functions.invoke("admin-users", {
+        body: {
+          action: "create",
+          email: newUserEmail,
+          password: newUserPassword,
+          full_name: newUserFullName,
+          is_admin: newUserIsAdmin,
+        },
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(`⚠ ${error.message}`);
         console.error(error);
         return;
       }
 
-      const createdUser = (data as any)?.user ?? null;
-
-      if (createdUser && newUserIsAdmin) {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({ user_id: createdUser.id, role: "admin" });
-
-        if (roleError) {
-          toast.error("User created but failed to assign admin role");
-          console.error(roleError);
-        }
+      if (data?.error) {
+        toast.error(`⚠ ${data.error}`);
+        return;
       }
 
       toast.success("✓ User created successfully!");
-      
+
       // Show success animations
       setSuccessCheckmark(true);
       setTimeout(() => setSuccessCheckmark(false), 1500);
-      
+
       setNewUserEmail("");
       setNewUserPassword("");
       setNewUserFullName("");
       setNewUserIsAdmin(false);
       setShowForm(false);
       setErrors({});
-      fetchUsers();
-    } catch (error) {
-      toast.error("Failed to create user");
+      
+      // Refetch users after a brief delay to allow realtime to propagate
+      setTimeout(() => fetchUsers(), 500);
+    } catch (error: any) {
+      toast.error(`⚠ Failed to create user: ${error.message}`);
       console.error(error);
     } finally {
       setLoading(false);
@@ -300,17 +306,56 @@ export const UserManagementPanel = () => {
     }
   };
 
-  const handleResetPassword = async (email: string) => {
+  const handleResetPassword = async (userId: string, userEmail: string) => {
+    if (!editPassword || editPassword.length < 8) {
+      toast.error("⚠ Password must be at least 8 characters");
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`
+      const passwordSchema = z.string()
+        .min(8, "Password must be at least 8 characters")
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain uppercase, lowercase, and number");
+
+      passwordSchema.parse(editPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(`⚠ ${error.errors[0].message}`);
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-users", {
+        body: {
+          action: "reset-password",
+          user_id: userId,
+          new_password: editPassword,
+        },
       });
 
-      if (error) throw error;
-      toast.success("✓ Password reset email sent to " + email);
-    } catch (error) {
-      toast.error("Failed to send reset email");
+      if (error) {
+        toast.error(`⚠ ${error.message}`);
+        console.error(error);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(`⚠ ${data.error}`);
+        return;
+      }
+
+      toast.success(`✓ Password updated for ${userEmail}`);
+      setEditPassword("");
+      setShowPasswordInput(false);
+      setSuccessUserId(userId);
+      setTimeout(() => setSuccessUserId(null), 2000);
+    } catch (error: any) {
+      toast.error(`⚠ Failed to reset password: ${error.message}`);
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -318,12 +363,16 @@ export const UserManagementPanel = () => {
     setEditingUserId(user.id);
     setEditFullName(user.full_name || "");
     setEditEmail(user.email);
+    setEditPassword("");
+    setShowPasswordInput(false);
   };
 
   const cancelEditing = () => {
     setEditingUserId(null);
     setEditFullName("");
     setEditEmail("");
+    setEditPassword("");
+    setShowPasswordInput(false);
   };
 
   const handleUpdateUser = async (userId: string) => {
@@ -335,36 +384,43 @@ export const UserManagementPanel = () => {
       emailSchema.parse(editEmail);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        toast.error(`⚠ ${error.errors[0].message}`);
       }
       return;
     }
 
     setLoading(true);
     try {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
+      const { data, error } = await supabase.functions.invoke("admin-users", {
+        body: {
+          action: "update",
+          user_id: userId,
+          email: editEmail.trim(),
           full_name: editFullName.trim(),
-          email: editEmail.trim()
-        })
-        .eq("id", userId);
+        },
+      });
 
-      if (profileError) throw profileError;
+      if (error) {
+        toast.error(`⚠ ${error.message}`);
+        console.error(error);
+        return;
+      }
 
-      toast.success("✓ User profile updated successfully");
+      if (data?.error) {
+        toast.error(`⚠ ${data.error}`);
+        return;
+      }
+
+      toast.success("✓ User updated successfully!");
       setSuccessUserId(userId);
       setTimeout(() => setSuccessUserId(null), 2000);
-      
+
       setEditingUserId(null);
-      await fetchUsers();
+      
+      // Refetch users after a brief delay
+      setTimeout(() => fetchUsers(), 500);
     } catch (error: any) {
-      const errorMessage = error?.message || "Unknown error";
-      if (typeof errorMessage === "string" && errorMessage.toLowerCase().includes("duplicate")) {
-        toast.error("This email is already in use");
-      } else {
-        toast.error("Failed to update profile");
-      }
+      toast.error(`⚠ Failed to update user: ${error.message}`);
       console.error(error);
     } finally {
       setLoading(false);
@@ -525,10 +581,70 @@ export const UserManagementPanel = () => {
                             onChange={(e) => setEditEmail(e.target.value)}
                             disabled={loading}
                           />
-                          <p className="text-xs text-muted-foreground">
-                            Note: Email changes in profiles table only. Auth email requires user confirmation.
-                          </p>
                         </div>
+                        
+                        {/* Password reset section */}
+                        <div className="space-y-2">
+                          {!showPasswordInput ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowPasswordInput(true)}
+                              disabled={loading}
+                              className="w-full"
+                            >
+                              <KeyRound className="h-4 w-4 mr-2" />
+                              Set New Password
+                            </Button>
+                          ) : (
+                            <>
+                              <Label htmlFor={`edit-password-${user.id}`}>New Password</Label>
+                              <Input
+                                id={`edit-password-${user.id}`}
+                                type="password"
+                                value={editPassword}
+                                onChange={(e) => setEditPassword(e.target.value)}
+                                placeholder="Enter new password"
+                                disabled={loading}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Must be 8+ characters with uppercase, lowercase, and number
+                              </p>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleResetPassword(user.id, user.email)}
+                                  disabled={loading || !editPassword}
+                                  className="flex-1"
+                                >
+                                  {loading ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <KeyRound className="h-4 w-4 mr-2" />
+                                      Update Password
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setShowPasswordInput(false);
+                                    setEditPassword("");
+                                  }}
+                                  disabled={loading}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        
                         <div className="flex items-center gap-2 pt-2">
                           {Array.isArray(user.user_roles) && user.user_roles.map((r) => (
                             <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
@@ -553,7 +669,7 @@ export const UserManagementPanel = () => {
                             ) : (
                               <>
                                 <Save className="h-4 w-4 mr-2" />
-                                Save
+                                Save Changes
                               </>
                             )}
                           </Button>
@@ -605,16 +721,6 @@ export const UserManagementPanel = () => {
                           >
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleResetPassword(user.email)}
-                            disabled={loading}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Reset Password
                           </Button>
 
                           <Button

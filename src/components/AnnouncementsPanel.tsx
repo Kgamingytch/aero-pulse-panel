@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Loader2, AlertCircle, Maximize2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SuccessCheckmark } from "@/components/ui/success-checkmark";
@@ -255,13 +255,16 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                     setDetailsOpen(true);
                   }}
                   className={cn(
-                    "p-4 bg-muted rounded-lg space-y-2 cursor-pointer",
+                    "relative p-4 rounded-lg space-y-2 cursor-pointer",
                     "transition-all duration-200",
-                    "hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md",
+                    "hover:scale-[1.02] hover:shadow-md",
                     "active:scale-[0.98]",
                     "animate-fade-in",
                     recentlyCreatedId === announcement.id && 
-                      "animate-success-flash ring-2 ring-green-500/50 bg-green-50"
+                      "animate-success-flash ring-2 ring-green-500/50 bg-green-50",
+                    announcement.priority === "high"
+                      ? "bg-gradient-to-br from-red-50 via-red-50/80 to-orange-50 border-2 border-red-300 animate-glow-pulse"
+                      : "bg-muted hover:bg-muted/80"
                   )}
                   style={{ 
                     animationDelay: `${index * 50}ms`,
@@ -271,7 +274,10 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground truncate">
+                        <h3 className={cn(
+                          "font-semibold truncate",
+                          announcement.priority === "high" ? "text-red-900" : "text-foreground"
+                        )}>
                           {announcement.title}
                         </h3>
 
@@ -281,13 +287,23 @@ export const AnnouncementsPanel = ({ isAdmin }: AnnouncementsPanelProps) => {
                         >
                           {announcement.priority}
                         </Badge>
+                        
+                        {announcement.priority === "high" && (
+                          <Maximize2 className="h-3 w-3 text-red-600 animate-bounce-subtle" />
+                        )}
                       </div>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className={cn(
+                        "text-sm line-clamp-2",
+                        announcement.priority === "high" ? "text-red-800" : "text-muted-foreground"
+                      )}>
                         {announcement.content}
                       </p>
 
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className={cn(
+                        "text-xs mt-2",
+                        announcement.priority === "high" ? "text-red-700" : "text-muted-foreground"
+                      )}>
                         {new Date(announcement.created_at).toLocaleString("en-US", {
                           dateStyle: "medium",
                           timeStyle: "short",
